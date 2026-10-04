@@ -1,0 +1,131 @@
+{
+  "github_user": "rupak2007",
+  "handle_line": "rupak@github",
+  "about": [
+    [
+      "role",
+      "AI/ML engineer (student)"
+    ],
+    [
+      "edu",
+      "SRM IST · B.Tech CSE (AI/ML), class of '28"
+    ],
+    [
+      "into",
+      "machine learning · AI systems · backend · applied AI"
+    ],
+    [
+      "langs",
+      "Python · Java · C · C++ · SQL"
+    ],
+    [
+      "status",
+      "open to ML internships, summer '27"
+    ]
+  ],
+  "contact": [
+    [
+      "github",
+      "@rupak2007"
+    ],
+    [
+      "linkedin",
+      "in/rupak-raj-bab83335b"
+    ],
+    [
+      "mail",
+      "rupakraj.v@gmail.com"
+    ]
+  ],
+  "stats_fallback": {
+    "repos": "--",
+    "stars": "--",
+    "commits": "--",
+    "followers": "--",
+    "uptime": "--"
+  },
+  "projects": [
+    {
+      "id": "tracewright",
+      "title": "tracewright.exe",
+      "name": "TRACEWRIGHT",
+      "subtitle": "network incident investigation",
+      "lines": [
+        "PCAP in, explained incident out.",
+        "Keeps evidence, inference and advice apart."
+      ],
+      "tags": [
+        "pcap",
+        "rules+ml",
+        "rag",
+        "llm"
+      ],
+      "status": "coming soon",
+      "lang": "python",
+      "repo": ""
+    },
+    {
+      "id": "ciphraud",
+      "title": "ciphraud.exe",
+      "name": "CIPHRAUD",
+      "subtitle": "fraud detection on encrypted data",
+      "lines": [
+        "The server scores every transaction.",
+        "It never gets to see one."
+      ],
+      "tags": [
+        "fhe",
+        "concrete-ml",
+        "xgboost",
+        "ieee-cis"
+      ],
+      "status": "private repo",
+      "lang": "python",
+      "repo": ""
+    }
+  ],
+  "more_projects": [
+    [
+      "vellum/",
+      "post-quantum evidence for key ceremonies"
+    ]
+  ],
+  "stack": [
+    [
+      "ml",
+      [
+        "python",
+        "pytorch",
+        "scikitlearn",
+        "pandas",
+        "numpy",
+        "mlflow"
+      ]
+    ],
+    [
+      "backend",
+      [
+        "fastapi",
+        "postgresql",
+        "qdrant",
+        "react"
+      ]
+    ],
+    [
+      "infra",
+      [
+        "docker",
+        "githubactions",
+        "prometheus",
+        "grafana",
+        "linux",
+        "git"
+      ]
+    ]
+  ],
+  "contact_links": {
+    "github": "https://github.com/rupak2007",
+    "linkedin": "https://www.linkedin.com/in/rupak-raj-bab83335b/",
+    "mail": "mailto:rupakraj.v@gmail.com"
+  }
+}
