@@ -78,9 +78,8 @@ def chrome(w, h):
 def png_b64(im):
     import base64, io
     buf = io.BytesIO()
-    q = im.convert("RGB").quantize(colors=64, dither=Image.Dither.NONE)
-    q.info.pop("transparency", None)
-    q.save(buf, "PNG", optimize=True)
+    rgb = im.convert("RGB")  # full colour, no palette squeeze: the graded scene keeps every tone
+    rgb.save(buf, "PNG", optimize=True)
     return base64.b64encode(buf.getvalue()).decode()
 
 
@@ -96,11 +95,14 @@ def main():
 
     frames = []
     for i, f in enumerate(scenes):
-        b64 = png_b64(f.resize((sw, sh), Image.NEAREST))
+        b64 = png_b64(f)  # native resolution; the browser scales it with nearest-neighbour below
         frames.append(f'<image class="f" style="animation-delay:{i * duration / 1000 - T:.3f}s" '
                       f'x="{sx}" y="{PAD_Y}" width="{sw}" height="{sh}" href="data:image/png;base64,{b64}"/>')
     slot = 100 / n
-    style = (f"<style>.f{{visibility:hidden;animation:fr {T:.2f}s steps(1,end) infinite}}"
+    # pixelated scaling happens at the viewer's real screen resolution, so blocks stay sharp at
+    # any width and on high-DPI screens instead of being resampled from a fixed 3x bitmap
+    style = (f"<style>.f{{visibility:hidden;animation:fr {T:.2f}s steps(1,end) infinite;"
+             f"image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated}}"
              f"@keyframes fr{{0%{{visibility:visible}}{slot:.4f}%{{visibility:hidden}}100%{{visibility:hidden}}}}"
              f".cur{{animation:bl 1.2s steps(1,end) infinite}}"
              f"@keyframes bl{{0%{{opacity:1}}50%{{opacity:0}}100%{{opacity:0}}}}</style>")
