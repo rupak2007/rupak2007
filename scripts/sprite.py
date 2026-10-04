@@ -2,7 +2,7 @@
 """Builds the recurring character from getjared's CC0 anime-collection paperdoll layers
 (walk base + black school uniform + hair), re-tones each layer into the profile's greys,
 and writes:
-  assets/divider.gif           the character walking across a thin rule
+  assets/divider.svg           the character walking across a thin rule
   assets/sprites/portrait.png  a front-facing still for the info card
 Run: python3 scripts/sprite.py
 """
@@ -92,38 +92,35 @@ def main():
     slot.alpha_composite(fig, ((184 - fig.width) // 2, 220 - fig.height - 8))
     slot.save(ROOT / "assets" / "sprites" / "portrait.png")
 
-    # divider: walks right along a 1px rule, then a short pause off-stage
-    W, Hh, rule_y = 840, 64, 58
-    walk_row = 2  # facing right
-    frames_walk = [cell(sh, walk_row, c) for c in range(4)]
-    bg = Image.new("RGBA", (W, Hh), (0, 0, 0, 0))  # transparent: works on light and dark GitHub
-    for x in range(W):
-        bg.putpixel((x, rule_y), H(build.FAINT) + (255,))
-    frames, speed = [], 3
-    x = -40
-    k = 0
-    while x < W:
-        f = bg.copy()
-        f.alpha_composite(frames_walk[k % 4], (x, rule_y - 58))
-        frames.append(f)
-        x += speed
-        k += 1
-    frames += [bg] * 20
-    # GIF has 1-bit alpha: snap partial alpha (the soft foot shadow) to solid, use index 0 as clear
-    KEY = (255, 0, 255)
-    def flat(f):
-        rgb = Image.new("RGB", f.size, KEY)
-        a = f.getchannel("A").point(lambda v: 255 if v > 60 else 0)
-        rgb.paste(f.convert("RGB"), mask=a)
-        return rgb
-    flats = [flat(f) for f in frames]
-    pal = flats[len(flats) // 3].quantize(colors=48, dither=Image.Dither.NONE)
-    pf = [f.quantize(palette=pal, dither=Image.Dither.NONE) for f in flats]
-    key_idx = pf[0].getpixel((0, 0))
-    out = ROOT / "assets" / "divider.gif"
-    pf[0].save(out, save_all=True, append_images=pf[1:], duration=120, loop=0, optimize=False,
-               disposal=2, transparency=key_idx)
-    print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB", len(frames), "frames")
+    # divider: an animated SVG (always runs on GitHub, unlike GIFs) of him walking a 1px rule.
+    # Transparent background, so it sits on light and dark GitHub alike.
+    import base64, io
+    W, Hh, rule_y, speed, step = 840, 64, 58, 3, 0.12  # 3px per 120ms frame, as before
+    walk = [cell(sh, 2, c) for c in range(4)]  # row 2 faces right
+    imgs = []
+    for k, f in enumerate(walk):
+        buf = io.BytesIO()
+        f.save(buf, "PNG", optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode()
+        imgs.append(f'<image class="w" style="animation-delay:{k * step - 4 * step:.2f}s" width="64" height="64" '
+                    f'style-rendering="pixelated" href="data:image/png;base64,{b64}"/>')
+    travel = (W + 40) / speed * step          # seconds to cross
+    T = travel + 20 * step                    # plus a short pause off-stage
+    done = travel / T * 100
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{Hh}" viewBox="0 0 {W} {Hh}" role="img" aria-label="divider">
+<style>
+.mv{{animation:mv {T:.2f}s linear infinite}}
+@keyframes mv{{0%{{transform:translate(-40px,{rule_y - 58}px)}}{done:.3f}%{{transform:translate({W}px,{rule_y - 58}px)}}100%{{transform:translate({W}px,{rule_y - 58}px)}}}}
+.w{{visibility:hidden;image-rendering:pixelated;animation:wk {4 * step:.2f}s steps(1,end) infinite}}
+@keyframes wk{{0%{{visibility:visible}}25%{{visibility:hidden}}100%{{visibility:hidden}}}}
+</style>
+<rect x="0" y="{rule_y}" width="{W}" height="1" fill="{build.FAINT}"/>
+<g class="mv">{"".join(imgs)}</g>
+</svg>
+"""
+    out = ROOT / "assets" / "divider.svg"
+    out.write_text(svg, encoding="utf-8")
+    print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB")
 
 
 ICONS = {"tracewright": (37, 11), "ciphraud": (33, 11)}  # Kenney 1-Bit Pack tiles (col, row)

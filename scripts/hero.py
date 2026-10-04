@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Composes assets/hero.gif.
+"""Composes assets/hero.svg.
 
 Scene: kotnaszynce's CC0 animated cityscape (raw/cityscape.gif), re-graded to night by
 night.py and scaled 3x with nearest-neighbour so every source pixel stays a crisp block.
@@ -16,7 +16,7 @@ import build  # noqa: E402  (tokens + pixel font)
 from night import H, night_frames  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SCALE, PAD_X, PAD_Y, BAR = 3, 36, 16, 27
+SCALE, PAD_X, PAD_Y, BAR, W = 2, 16, 16, 27, 840
 NAME = "RUPAK RAJ"
 TEXT_X, NAME_Y = 118, 20  # in scene pixels
 CROP_H = 110
@@ -75,36 +75,56 @@ def chrome(w, h):
     return im
 
 
+def png_b64(im):
+    import base64, io
+    buf = io.BytesIO()
+    q = im.convert("RGB").quantize(colors=64, dither=Image.Dither.NONE)
+    q.info.pop("transparency", None)
+    q.save(buf, "PNG", optimize=True)
+    return base64.b64encode(buf.getvalue()).decode()
+
+
 def main():
+    """hero.svg: an animated SVG, not a GIF. GitHub puts a click-to-play control on GIFs for
+    viewers whose animation setting is off; SVG animations always run."""
     scenes, duration = night_frames(ROOT / "raw" / "cityscape.gif")
     scenes = [f.crop((0, 0, f.width, CROP_H)) for f in scenes]  # drop the empty bottom steps
     sw, sh = scenes[0].width * SCALE, scenes[0].height * SCALE
-    w, h = sw + 2 * PAD_X, BAR + PAD_Y * 2 + sh
-    base = chrome(w, h)
-    ImageDraw.Draw(base).rectangle([PAD_X - 1, BAR + PAD_Y - 1, PAD_X + sw, BAR + PAD_Y + sh], outline=H(build.EDGE))
-    shadow, ink, accent = H("#06080b"), H(build.TEXT), H(build.ACCENT)
-    frames = []
-    for i, scene in enumerate(scenes):
-        s = scene.copy()
-        d = ImageDraw.Draw(s)
-        for dx, dy, col in ((1, 1, shadow), (0, 0, ink)):
-            end = glyphs(d, NAME, TEXT_X + dx, NAME_Y + dy, 2, col)
-        if (i // 3) % 2 == 0:  # cursor after the name: 600ms on, 600ms off
-            d.rectangle([end + 1, NAME_Y + 10, end + 7, NAME_Y + 13], fill=accent)
-        f = base.copy()
-        f.paste(s.resize((sw, sh), Image.NEAREST), (PAD_X, BAR + PAD_Y))
-        frames.append(f)
+    w, h = W, BAR + PAD_Y * 2 + sh
+    sx = w - PAD_X - sw  # scene sits on the right; the name gets its own column on the left
+    n, T = len(scenes), len(scenes) * duration / 1000
 
-    # one shared palette so colours don't shimmer between frames
-    strip = Image.new("RGB", (w, h * len(frames)))
-    for k, f in enumerate(frames):
-        strip.paste(f, (0, k * h))
-    pal = strip.quantize(colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
-    pframes = [f.quantize(palette=pal, dither=Image.Dither.NONE) for f in frames]
-    out = ROOT / "assets" / "hero.gif"
-    pframes[0].save(out, save_all=True, append_images=pframes[1:], duration=duration, loop=0,
-                    optimize=True, disposal=1)
-    print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB", f"{w}x{h}", len(frames), "frames")
+    frames = []
+    for i, f in enumerate(scenes):
+        b64 = png_b64(f.resize((sw, sh), Image.NEAREST))
+        frames.append(f'<image class="f" style="animation-delay:{i * duration / 1000 - T:.3f}s" '
+                      f'x="{sx}" y="{PAD_Y}" width="{sw}" height="{sh}" href="data:image/png;base64,{b64}"/>')
+    slot = 100 / n
+    style = (f"<style>.f{{visibility:hidden;animation:fr {T:.2f}s steps(1,end) infinite}}"
+             f"@keyframes fr{{0%{{visibility:visible}}{slot:.4f}%{{visibility:hidden}}100%{{visibility:hidden}}}}"
+             f".cur{{animation:bl 1.2s steps(1,end) infinite}}"
+             f"@keyframes bl{{0%{{opacity:1}}50%{{opacity:0}}100%{{opacity:0}}}}</style>")
+
+    # name, stacked, in the 5x7 font at 6px per font pixel (a multiple of the scene's 2px grid)
+    px, lines = 6, NAME.split()
+    block_h = len(lines) * 7 * px + (len(lines) - 1) * 3 * px
+    nx, ny = PAD_X + 26, PAD_Y + (sh - block_h) // 2
+    name = ""
+    for k, word in enumerate(lines):
+        y = ny + k * 10 * px
+        name += build.pixel_text(word, nx + 3, y + 3, scale=px, fill="#06080b")
+        name += build.pixel_text(word, nx, y, scale=px, fill=build.TEXT)
+    last_end = nx + build.pixel_width(lines[-1], scale=px)
+    cur = (f'<rect class="cur" x="{last_end + px}" y="{ny + (len(lines) - 1) * 10 * px + 5 * px}" '
+           f'width="{4 * px}" height="{2 * px}" fill="{build.ACCENT}"/>')
+    frame = (f'<rect x="{sx - .5}" y="{PAD_Y - .5}" width="{sw + 1}" height="{sh + 1}" '
+             f'fill="none" stroke="{build.EDGE}"/>')
+    body = style + "".join(frames) + name + cur + frame
+    svg = build.window(w, h, "rupak.exe — 接続中…", body,
+                       label="RUPAK RAJ in pixel letters over a night riverside")
+    out = ROOT / "assets" / "hero.svg"
+    out.write_text(svg, encoding="utf-8")
+    print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB", f"{w}x{h}", n, "frames")
 
 
 if __name__ == "__main__":
