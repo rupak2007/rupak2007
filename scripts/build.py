@@ -370,6 +370,13 @@ def readme():
 '''
 
 
+def unlink_images(md):
+    """GitHub wraps every bare <img> in a link to the file. Images inside <picture> are left
+    alone, so wrapping ours keeps a click on the profile from jumping into the repo."""
+    import re
+    return re.sub(r'(<img src="assets/[^>]*?/>)', r"<picture>\1</picture>", md)
+
+
 def main():
     ASSETS.mkdir(exist_ok=True)
     stats = fetch_stats()
@@ -379,7 +386,7 @@ def main():
     for name, svg in out.items():
         (ASSETS / name).write_text(svg, encoding="utf-8")
         print("wrote", name)
-    (ROOT / "README.md").write_text(readme(), encoding="utf-8")
+    (ROOT / "README.md").write_text(unlink_images(readme()), encoding="utf-8")
     print("wrote README.md")
 
 
