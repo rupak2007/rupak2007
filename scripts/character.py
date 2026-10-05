@@ -12,6 +12,7 @@ import base64
 import io
 import pathlib
 import sys
+from collections import Counter
 
 from PIL import Image
 
@@ -22,44 +23,106 @@ from night import H  # noqa: E402
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 NATIVE = ROOT / "raw" / "girl1_native.png"
 
-# luminance bands -> profile greys (lifted so dark hair still reads on the dark page)
-BANDS = [(20, "#0a0d12"), (34, "#232a35"), (55, "#333c48"), (110, "#4d5765"),
-         (150, "#7a8390"), (190, "#a9b2bd"), (256, "#dfe5ea")]
+# luminance bands -> profile greys: three darks so hair strands and pleats survive
+BANDS = [(22, "#0b0e13"), (34, "#1b212a"), (50, "#2b333e"), (95, "#434c59"),
+         (150, "#6e7681"), (200, "#aab3be"), (256, "#e3e9ee")]
+DARKS = {H(c) for c in ("#1b212a", "#2b333e", "#434c59")}
+BOW, BOW_SHADE = H("#4fa3ad"), H("#2e6b73")
+OUTLINE = H("#030407")
 
 
 def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
 
 
+def _despeckle(im, protect, passes):
+    """A pixel with no same-coloured 4-neighbour takes its neighbours' most common colour."""
+    w, h = im.size
+    for _ in range(passes):
+        s, d = im.copy().load(), im.load()
+        for y in range(h):
+            for x in range(w):
+                p = s[x, y]
+                if not p[3] or (x, y) in protect:
+                    continue
+                if any(0 <= x + dx < w and 0 <= y + dy < h and s[x + dx, y + dy] == p
+                       for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    continue
+                n8 = [s[x + dx, y + dy] for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                      if (dx or dy) and 0 <= x + dx < w and 0 <= y + dy < h and s[x + dx, y + dy][3]]
+                if n8:
+                    d[x, y] = Counter(n8).most_common(1)[0][0]
+    return im
+
+
+def _clump(im, protect, passes=2, need=5):
+    """Within the dark tones (hair, uniform), a pixel outvoted by 5+ of its 8 neighbours joins
+    them, so the render noise settles into clean clumps."""
+    w, h = im.size
+    for _ in range(passes):
+        s, d = im.copy().load(), im.load()
+        for y in range(1, h - 1):
+            for x in range(1, w - 1):
+                p = s[x, y]
+                if not p[3] or (x, y) in protect or p[:3] not in DARKS:
+                    continue
+                n = [s[x + dx, y + dy] for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy]
+                n = [q for q in n if q[3] and q[:3] in DARKS]
+                if n:
+                    c, k = Counter(n).most_common(1)[0]
+                    if c != p and k >= need:
+                        d[x, y] = c
+    return im
+
+
+def _outline(im):
+    w, h = im.size
+    out = Image.new("RGBA", (w + 2, h + 2), (0, 0, 0, 0))
+    out.alpha_composite(im, (1, 1))
+    a, o = out.getchannel("A").load(), out.load()
+    ring = [(x, y) for y in range(h + 2) for x in range(w + 2) if not a[x, y] and any(
+        0 <= x + dx < w + 2 and 0 <= y + dy < h + 2 and a[x + dx, y + dy]
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    for xy in ring:
+        o[xy] = OUTLINE + (255,)
+    return out
+
+
 def styled():
+    """Native pixels -> profile palette -> despeckled -> dark tones clumped -> 1px outline."""
     src = Image.open(NATIVE).convert("RGB")
     w, h = src.size
-    # background: flood fill the near-black from the border
     bg, stack = set(), [(x, y) for x in range(w) for y in (0, h - 1)] + [(x, y) for y in range(h) for x in (0, w - 1)]
-    while stack:
+    while stack:  # background: flood fill the near-black from the border
         x, y = stack.pop()
         if (x, y) in bg or not (0 <= x < w and 0 <= y < h) or lum(src.getpixel((x, y))) >= 16:
             continue
         bg.add((x, y))
         stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     for y in range(h):
         for x in range(w):
             if (x, y) in bg:
                 continue
             r, g, b = src.getpixel((x, y))
-            if r - g > 40:
-                c = H("#4fa3ad")                          # the bow, in the dimmer accent
+            if r - g > 40:  # the bow, in the dimmer accent with one shade
+                c = BOW if lum((r, g, b)) > 70 else BOW_SHADE
             else:
-                L = lum((r, g, b))
-                c = H(next(col for top, col in BANDS if L < top))
-            out.putpixel((x, y), c + (255,))
-    return out.crop(out.getchannel("A").getbbox())
+                c = H(next(col for top, col in BANDS if lum((r, g, b)) < top))
+            im.putpixel((x, y), c + (255,))
+    im = im.crop(im.getchannel("A").getbbox())
+    face = {(x, y) for y in range(19, 27) for x in range(6, 28)}       # eyes and lashes stay as drawn
+    pleats = {(x, y) for y in range(47, 67) for x in range(im.width)}  # keep the skirt's folds
+    im = _despeckle(im, face, passes=2)
+    im = _clump(im, face | pleats)
+    im = _despeckle(im, face, passes=1)
+    return _outline(im)
 
 
-SKIN, LASH = H("#dfe5ea"), H("#333c48")
-EYES = [(x, y) for y in (23, 24) for x in list(range(10, 15)) + list(range(19, 25))]
-WAIST = 45  # rows above the belt rise on the breath
+SKIN, LASH = H("#e3e9ee"), H("#2b333e")
+EYE_ROW = 24  # rows 24-25 of the outlined sprite
+EYES = [(x, y) for y in (EYE_ROW, EYE_ROW + 1) for x in list(range(11, 16)) + list(range(20, 26))]
+WAIST = 46  # rows above the belt rise on the breath
 
 
 def poses(im):
@@ -73,8 +136,8 @@ def poses(im):
     blink = rest.copy()
     for (x, y) in EYES:
         p = im.getpixel((x, y))
-        if p[3] and p[:3] not in (SKIN, H("#0a0d12"), H("#232a35")):
-            blink.putpixel((x, y + 1), (SKIN if y == 23 else LASH) + (255,))
+        if p[3] and p[:3] not in (SKIN, OUTLINE, H("#0b0e13"), H("#1b212a")):
+            blink.putpixel((x, y + 1), (SKIN if y == EYE_ROW else LASH) + (255,))
     return {"rest": rest, "breath": breath, "blink": blink}
 
 
@@ -87,10 +150,6 @@ def b64(im):
 def portrait(im):
     fig = im.resize((im.width * 2, im.height * 2), Image.NEAREST)
     slot = Image.new("RGBA", (184, 220), H(build.BG) + (255,))
-    for y in range(0, 220, 4):  # faint scanlines behind her, CRT-ish
-        if (y // 4) % 2 == 0:
-            for x in range(184):
-                slot.putpixel((x, y), H("#10151c") + (255,))
     slot.alpha_composite(fig, ((184 - fig.width) // 2, 220 - fig.height - 12))
     out = ROOT / "assets" / "sprites" / "portrait.png"
     out.parent.mkdir(parents=True, exist_ok=True)

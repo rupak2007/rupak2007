@@ -14,7 +14,7 @@ from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPRITES = ROOT / "assets" / "sprites"
-WAIST, NECK = 46, 30  # rows in avatar.png as written by character.py (1px top padding)
+WAIST, NECK = 47, 31  # rows in avatar.png as written by character.py (1px top padding)
 
 
 def shifted(src, rows, dx=0, dy=0, keep_seam=None):
