@@ -173,46 +173,19 @@ def embed_png(path, x, y, w, h):
             f'href="data:image/png;base64,{b64}"/>')
 
 
-def png_size(path):
-    """Width and height from a PNG header (the Action runs without Pillow)."""
-    import struct
-    with open(path, "rb") as f:
-        head = f.read(24)
-    return struct.unpack(">II", head[16:24])
+# idle loop for the info-card portrait: (pose file, start s, end s); poses come from scripts/girl.py
+PORTRAIT_LOOP = (6.4, [("portrait.png", 0, 1.6), ("portrait-breath.png", 1.6, 3.0), ("portrait.png", 3.0, 4.4),
+                       ("portrait-blink.png", 4.4, 4.56), ("portrait.png", 4.56, 5.6),
+                       ("portrait-blink.png", 5.6, 5.76), ("portrait.png", 5.76, 6.4)])
 
 
-AVATAR_PIXEL = (1.04, 1.0)  # its source grid is 5.38 x 5.16 px; keep those proportions
-
-
-# idle loop for the portrait: (pose file, start s, end s); poses come from scripts/avatar.py
-AVATAR_LOOP = (6.4, [("avatar.png", 0, 1.6), ("avatar-breath.png", 1.6, 3.2), ("avatar.png", 3.2, 4.2),
-                     ("avatar-glance.png", 4.2, 5.4), ("avatar.png", 5.4, 6.4)])
-
-
-def avatar_portrait(x, y, w, h):
-    """The character (assets/sprites/avatar.png, stored at its native pixel size), scaled
-    up by the browser with hard pixel edges, on the card's plain background. If the idle poses
-    exist she breathes and glances at the text; otherwise she stands still."""
-    path = ASSETS / "sprites" / "avatar.png"
-    if not path.exists():
-        return None
-    nw, nh = png_size(path)
-    scale = (h - 14) / nh
-    aw, ah = nw * scale * AVATAR_PIXEL[0], nh * scale * AVATAR_PIXEL[1]
-    ax, ay = x + (w - aw) / 2, y + h - ah - 6
-    lines = ""  # plain background behind her
-    pix = "image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated"
-
-    def img(file, cls=""):
-        b64 = base64.b64encode((ASSETS / "sprites" / file).read_bytes()).decode()
-        c = f' class="{cls}"' if cls else ""
-        return (f'<image{c} x="{ax:.1f}" y="{ay:.1f}" width="{aw:.1f}" height="{ah:.1f}" preserveAspectRatio="none" '
-                f'style="{pix}" href="data:image/png;base64,{b64}"/>')
-
-    period, slots = AVATAR_LOOP
+def portrait_loop(x, y, w, h):
+    """The character's idle: she breathes and blinks, by showing one full-slot pose at a time.
+    Falls back to the still portrait if a pose is missing, and to nothing if that is too."""
+    period, slots = PORTRAIT_LOOP
     files = sorted({f for f, _, _ in slots})
     if not all((ASSETS / "sprites" / f).exists() for f in files):
-        return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}' + img("avatar.png")
+        return embed_png("sprites/portrait.png", x, y, w, h)
     css, els = [], []
     for i, f in enumerate(files):
         kf = {0.0: "hidden", 100.0: "hidden"}
@@ -222,12 +195,11 @@ def avatar_portrait(x, y, w, h):
         for ff, a, b in slots:
             if ff == f:
                 kf[round(a / period * 100, 3)] = "visible"
-        name = f"av{i}"
+        name = f"pf{i}"
         css.append(f"@keyframes {name}{{" + "".join(f"{k}%{{visibility:{v}}}" for k, v in sorted(kf.items())) + "}"
                    f".{name}{{visibility:hidden;animation:{name} {period}s steps(1,end) infinite}}")
-        els.append(img(f, name))
-    return (f'<style>{"".join(css)}</style><rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}'
-            + "".join(els))
+        els.append(embed_png(f"sprites/{f}", x, y, w, h).replace("<image ", f'<image class="{name}" ', 1))
+    return f'<style>{"".join(css)}</style>' + "".join(els)
 
 
 # ---- live stats -----------------------------------------------------------
@@ -313,7 +285,7 @@ def resolve_projects(repos):
 # ---- panels ---------------------------------------------------------------
 def info_card(stats):
     w = 840
-    portrait = embed_png("sprites/portrait.png", 24, 22, 184, 220)
+    portrait = portrait_loop(24, 22, 184, 220)
     x = 236 if portrait else 24
     portrait = portrait or ""
     lines = [rule(x, 38, CFG["handle_line"], fill=TEXT, bold=True, lead=False)]
