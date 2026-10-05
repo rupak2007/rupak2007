@@ -184,9 +184,15 @@ def png_size(path):
 AVATAR_PIXEL = (1.09, 1.0)  # the portrait was drawn on slightly wide pixels; keep its proportions
 
 
+# idle loop for the portrait: (pose file, start s, end s); poses come from scripts/avatar.py
+AVATAR_LOOP = (6.4, [("avatar.png", 0, 1.6), ("avatar-breath.png", 1.6, 3.2), ("avatar.png", 3.2, 4.2),
+                     ("avatar-glance.png", 4.2, 5.4), ("avatar.png", 5.4, 6.4)])
+
+
 def avatar_portrait(x, y, w, h):
     """Rupak's own portrait (assets/sprites/avatar.png, stored at its native pixel size), scaled
-    up by the browser with hard pixel edges, standing on faint CRT scanlines."""
+    up by the browser with hard pixel edges, standing on faint CRT scanlines. If the idle poses
+    exist she breathes and glances at the text; otherwise she stands still."""
     path = ASSETS / "sprites" / "avatar.png"
     if not path.exists():
         return None
@@ -195,11 +201,33 @@ def avatar_portrait(x, y, w, h):
     aw, ah = nw * scale * AVATAR_PIXEL[0], nh * scale * AVATAR_PIXEL[1]
     ax, ay = x + (w - aw) / 2, y + h - ah - 6
     lines = "".join(f'<rect x="{x}" y="{y + k}" width="{w}" height="4" fill="#10151c"/>' for k in range(0, h, 8))
-    b64 = base64.b64encode(path.read_bytes()).decode()
-    return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}'
-            f'<image x="{ax:.1f}" y="{ay:.1f}" width="{aw:.1f}" height="{ah:.1f}" preserveAspectRatio="none" '
-            f'style="image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated" '
-            f'href="data:image/png;base64,{b64}"/>')
+    pix = "image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated"
+
+    def img(file, cls=""):
+        b64 = base64.b64encode((ASSETS / "sprites" / file).read_bytes()).decode()
+        c = f' class="{cls}"' if cls else ""
+        return (f'<image{c} x="{ax:.1f}" y="{ay:.1f}" width="{aw:.1f}" height="{ah:.1f}" preserveAspectRatio="none" '
+                f'style="{pix}" href="data:image/png;base64,{b64}"/>')
+
+    period, slots = AVATAR_LOOP
+    files = sorted({f for f, _, _ in slots})
+    if not all((ASSETS / "sprites" / f).exists() for f in files):
+        return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}' + img("avatar.png")
+    css, els = [], []
+    for i, f in enumerate(files):
+        kf = {0.0: "hidden", 100.0: "hidden"}
+        for ff, a, b in slots:
+            if ff == f:
+                kf[round(b / period * 100, 3)] = "hidden"
+        for ff, a, b in slots:
+            if ff == f:
+                kf[round(a / period * 100, 3)] = "visible"
+        name = f"av{i}"
+        css.append(f"@keyframes {name}{{" + "".join(f"{k}%{{visibility:{v}}}" for k, v in sorted(kf.items())) + "}"
+                   f".{name}{{visibility:hidden;animation:{name} {period}s steps(1,end) infinite}}")
+        els.append(img(f, name))
+    return (f'<style>{"".join(css)}</style><rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}'
+            + "".join(els))
 
 
 # ---- live stats -----------------------------------------------------------
