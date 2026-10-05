@@ -8,6 +8,7 @@ The scene, both cats and the icons are human-made pixel art released under CC0; 
 | animated cityscape background/wallpaper | kotnaszynce | https://opengameart.org/content/animated-cityscape-backgroundwallpaper | CC0 | the hero scene (re-graded from day to night; the dog and one figure removed, the other person animated: breathing, a glance) |
 | A Cat (idle sheet) | shangri-la | https://opengameart.org/content/a-cat | CC0 | the sitting cat on the ledge (its two sitting frames), as a flat silhouette to match the scene |
 | the character | Rupak Raj, generated with ChatGPT | — | AI-generated; not CC0 | info-card portrait and the figure walking the divider (front-facing walk made by moving her own pixels) |
+| cat sheet (anime-collection, `NPCs/Animals/sheet_cat.png`) | getjared | https://opengameart.org/content/anime-collection | CC0 (author asks for a mention, so: thank you) | the cat trotting behind her on the divider (its side-view walk cycle, flipped and toned grey) |
 | 1-Bit Pack | Kenney | https://kenney.nl/assets/1-bit-pack | CC0 | project icons (key, target) |
 | Simple Icons 16.34.0 | Simple Icons contributors | https://simpleicons.org | CC0-1.0 project; logos are trademarks of their owners | toolbox logos |
 | snk | Platane | https://github.com/Platane/snk | used as a GitHub Action | contribution snake |

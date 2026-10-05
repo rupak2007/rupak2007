@@ -141,6 +141,75 @@ def poses(im):
     return {"rest": rest, "breath": breath, "blink": blink}
 
 
+# ---- walking ----------------------------------------------------------------------------
+# Made from her own pixels: legs shifted into strides, a 1px bob on the passing frames, and
+# her face nudged 1px toward the way she walks (left, so the ponytail trails). Nothing new
+# is drawn except where a moved part leaves a gap in her hair.
+LEGS_Y = 69                        # rows from here down are legs and shoes
+LEG_SPLIT = 18                     # columns left of this are her left (front) leg
+FACE = (9, 17, 28, 30)             # x0, y0, x1, y1 of the face block nudged 1px left
+HAIR = H("#1b212a")
+CAT_SHEET = ROOT / "raw" / "anime" / "Sprites" / "NPCs" / "Animals" / "sheet_cat.png"
+
+
+def _part(im, box):
+    x0, y0, x1, y1 = box
+    out = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    out.paste(im.crop((x0, y0, x1, y1)), (x0, y0))
+    return out
+
+
+def walk_frames(im):
+    """Four frames, RPG-style step: one foot lifts (3px, a pixel forward), pass with the body
+    up 1px, the other foot lifts, pass again."""
+    w, h = im.size
+    face = im.copy()
+    fx0, fy0, fx1, fy1 = FACE
+    block = im.crop((fx0, fy0, fx1, fy1))
+    for y in range(fy0, fy1):          # vacate, then put the face back 1px left
+        face.putpixel((fx1 - 1, y), HAIR + (255,) if im.getpixel((fx1 - 1, y))[3] else (0, 0, 0, 0))
+    face.paste(block, (fx0 - 1, fy0), block)
+    body = _part(face, (0, 0, w, LEGS_Y))
+    front = _part(face, (0, LEGS_Y, LEG_SPLIT, h))   # her left leg, nearer the viewer
+    back = _part(face, (LEG_SPLIT, LEGS_Y, w, h))
+    pad = 3
+    frames = []
+    for front_lift, back_lift, bob in ((3, 0, 0), (0, 0, 1), (0, 3, 0), (0, 0, 1)):
+        f = Image.new("RGBA", (w + 2 * pad, h + 3), (0, 0, 0, 0))
+        f.alpha_composite(back, (pad - (1 if back_lift else 0), 3 - back_lift))
+        f.alpha_composite(front, (pad - (1 if front_lift else 0), 3 - front_lift))
+        if bob:  # passing: body up 1px, waist row held so she stays joined to her legs
+            f.alpha_composite(body.crop((0, 0, w, LEGS_Y)), (pad, 2))
+            f.alpha_composite(body.crop((0, LEGS_Y - 1, w, LEGS_Y)), (pad, LEGS_Y + 2))
+        else:
+            f.alpha_composite(body, (pad, 3))
+        frames.append(f)
+    return frames
+
+
+def cat_walk():
+    """getjared's CC0 cat sheet, row 1 (side-view walk), flipped to face left, toned to greys."""
+    sheet = Image.open(CAT_SHEET).convert("RGBA")
+    tones = {(0, 0, 0): OUTLINE, (220, 201, 181): H("#c3cbd3"), (228, 197, 195): H("#c3cbd3"),
+             (167, 146, 140): H("#7d8692"), (179, 140, 136): H("#7d8692"), (107, 86, 79): H("#4a5360"),
+             (57, 57, 57): OUTLINE}
+    frames = []
+    for c in range(4):
+        cell = sheet.crop((c * 64, 64, c * 64 + 64, 128))
+        out = Image.new("RGBA", cell.size, (0, 0, 0, 0))
+        for y in range(64):
+            for x in range(64):
+                r, g, b, a = cell.getpixel((x, y))
+                if a == 255:  # drop the soft shadow
+                    out.putpixel((x, y), tones.get((r, g, b), H("#7d8692")) + (255,))
+        frames.append(out)
+    box = frames[0].getchannel("A").getbbox()
+    for f in frames[1:]:
+        b = f.getchannel("A").getbbox()
+        box = (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
+    return [f.crop(box).transpose(Image.Transpose.FLIP_LEFT_RIGHT) for f in frames]  # face left, with her
+
+
 def b64(im):
     buf = io.BytesIO()
     im.save(buf, "PNG", optimize=True)
@@ -205,43 +274,43 @@ def cat_walk():
     for f in frames:
         bb = f.getchannel("A").getbbox()
         box = bb if box is None else (min(box[0], bb[0]), min(box[1], bb[1]), max(box[2], bb[2]), max(box[3], bb[3]))
-    return [f.crop(box) for f in frames]
+    return [f.crop(box).transpose(Image.Transpose.FLIP_LEFT_RIGHT) for f in frames]  # face left, with her
 
 
 def divider(im):
-    """She walks the rule left to right with a cat trotting behind her, then a pause off-stage.
-    Animated SVG (always plays on GitHub), pixelated scaling, transparent background."""
-    girl, cat = walk_frames(im), cat_walk()
-    W, step_s, speed = 840, 0.14, 3           # one frame every 140ms, 3px per frame
-    gw, gh = girl[0].size
-    cw, ch_ = cat[0].size
-    rule_y = gh + 2
+    """She walks the divider right to left, the cat trotting behind her, then the rule rests
+    empty for a moment. Animated SVG (CSS), so it always plays on GitHub."""
+    F, C = walk_frames(im), cat_walk()
+    W = 840
+    fw, fh = F[0].size
+    cw, chh = C[0].size
+    rule_y = fh + 1
     Hh = rule_y + 4
-    gap = 26                                  # cat trails her by this many px
-    start, end = -(gw + gap + cw + 4), W + 4
-    travel = (end - start) / speed * step_s
-    T = round(travel + 3.0, 2)                # then three seconds off-stage
+    gap = 10                                  # cat a little behind her heels
+    group_w = fw + gap + cw
+    step, speed = 0.16, 26.0                  # seconds per frame; px per second
+    travel = (W + group_w + 20) / speed
+    T = round(travel + 2.5, 2)                # then a short pause off-stage
     done = travel / T * 100
-    pix = "image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated"
-    cyc = len(girl) * step_s
-
-    def frames(prefix, imgs, x, y):
-        els = []
-        for k, f in enumerate(imgs):
-            els.append(f'<image class="{prefix}" style="animation-delay:{k * step_s - cyc:.2f}s" x="{x}" y="{y}" '
-                       f'width="{f.width}" height="{f.height}" href="data:image/png;base64,{b64(f)}"/>')
-        return "".join(els)
-
-    css = (f".mv{{animation:mv {T}s linear infinite}}"
-           f"@keyframes mv{{0%{{transform:translateX({start}px)}}{done:.3f}%{{transform:translateX({end}px)}}"
-           f"100%{{transform:translateX({end}px)}}}}"
-           f".g,.c{{visibility:hidden;{pix};animation:st {cyc:.2f}s steps(1,end) infinite}}"
-           f"@keyframes st{{0%{{visibility:visible}}25%{{visibility:hidden}}100%{{visibility:hidden}}}}")
-    body = (frames("g", girl, cw + gap, rule_y - gh) + frames("c", cat, 0, rule_y - ch_))
+    css = [
+        f".mv{{animation:mv {T}s linear infinite}}",
+        f"@keyframes mv{{0%{{transform:translateX({W + 10}px)}}{done:.3f}%{{transform:translateX({-group_w - 10}px)}}"
+        f"100%{{transform:translateX({-group_w - 10}px)}}}}",
+        ".px{image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated}",
+    ]
+    els = []
+    for name, frames, x0, y0, per in (("g", F, 0, rule_y - fh, step), ("c", C, fw + gap, rule_y - chh, 0.15)):
+        n = len(frames)
+        css.append(f"@keyframes {name}w{{0%{{visibility:visible}}{100 / n:.3f}%{{visibility:hidden}}100%{{visibility:hidden}}}}")
+        for k, f in enumerate(frames):
+            css.append(f".{name}{k}{{visibility:hidden;animation:{name}w {n * per:.2f}s steps(1,end) infinite;"
+                       f"animation-delay:{k * per - n * per:.2f}s}}")
+            els.append(f'<image class="{name}{k} px" x="{x0}" y="{y0}" width="{f.width}" height="{f.height}" '
+                       f'href="data:image/png;base64,{b64(f)}"/>')
     svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{Hh}" viewBox="0 0 {W} {Hh}" '
-           f'role="img" aria-label="divider">\n<style>{css}</style>\n'
+           f'role="img" aria-label="divider">\n<style>{"".join(css)}</style>\n'
            f'<rect x="0" y="{rule_y}" width="{W}" height="1" fill="{build.FAINT}"/>\n'
-           f'<g class="mv">{body}</g>\n</svg>\n')
+           f'<g class="mv">{"".join(els)}</g>\n</svg>\n')
     out = ROOT / "assets" / "divider.svg"
     out.write_text(svg, encoding="utf-8")
     print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB", f"loop {T}s")
