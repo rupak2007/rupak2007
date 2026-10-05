@@ -173,6 +173,35 @@ def embed_png(path, x, y, w, h):
             f'href="data:image/png;base64,{b64}"/>')
 
 
+def png_size(path):
+    """Width and height from a PNG header (the Action runs without Pillow)."""
+    import struct
+    with open(path, "rb") as f:
+        head = f.read(24)
+    return struct.unpack(">II", head[16:24])
+
+
+AVATAR_PIXEL = (1.09, 1.0)  # the portrait was drawn on slightly wide pixels; keep its proportions
+
+
+def avatar_portrait(x, y, w, h):
+    """Rupak's own portrait (assets/sprites/avatar.png, stored at its native pixel size), scaled
+    up by the browser with hard pixel edges, standing on faint CRT scanlines."""
+    path = ASSETS / "sprites" / "avatar.png"
+    if not path.exists():
+        return None
+    nw, nh = png_size(path)
+    scale = (h - 14) / nh
+    aw, ah = nw * scale * AVATAR_PIXEL[0], nh * scale * AVATAR_PIXEL[1]
+    ax, ay = x + (w - aw) / 2, y + h - ah - 6
+    lines = "".join(f'<rect x="{x}" y="{y + k}" width="{w}" height="4" fill="#10151c"/>' for k in range(0, h, 8))
+    b64 = base64.b64encode(path.read_bytes()).decode()
+    return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}'
+            f'<image x="{ax:.1f}" y="{ay:.1f}" width="{aw:.1f}" height="{ah:.1f}" preserveAspectRatio="none" '
+            f'style="image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated" '
+            f'href="data:image/png;base64,{b64}"/>')
+
+
 # ---- live stats -----------------------------------------------------------
 def fetch_stats():
     cache = ASSETS / "stats.json"
@@ -256,7 +285,7 @@ def resolve_projects(repos):
 # ---- panels ---------------------------------------------------------------
 def info_card(stats):
     w = 840
-    portrait = embed_png("sprites/portrait.png", 24, 22, 184, 220)  # optional
+    portrait = avatar_portrait(24, 22, 184, 220) or embed_png("sprites/portrait.png", 24, 22, 184, 220)
     x = 236 if portrait else 24
     portrait = portrait or ""
     lines = [rule(x, 38, CFG["handle_line"], fill=TEXT, bold=True, lead=False)]
