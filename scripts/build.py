@@ -181,23 +181,24 @@ def png_size(path):
     return struct.unpack(">II", head[16:24])
 
 
-AVATAR_PIXEL = (1.04, 1.0)  # its source grid is 5.38 x 5.16 px; keep those proportions
+AVATAR_PIXEL = (1, 1)  # square pixels
 
 
-# idle loop for the portrait: (pose file, start s, end s); poses come from scripts/avatar.py
-AVATAR_LOOP = (6.4, [("avatar.png", 0, 1.6), ("avatar-breath.png", 1.6, 3.2), ("avatar.png", 3.2, 4.2),
-                     ("avatar-glance.png", 4.2, 5.4), ("avatar.png", 5.4, 6.4)])
+# idle loop for the portrait: (pose file, start s, end s); poses come from scripts/girl.py
+AVATAR = "girl-idle-0.png"
+AVATAR_LOOP = (6.0, [(AVATAR, 0, 1.6), ("girl-idle-1.png", 1.6, 3.0), (AVATAR, 3.0, 4.4),
+                     ("girl-idle-2.png", 4.4, 4.56), (AVATAR, 4.56, 6.0)])
 
 
 def avatar_portrait(x, y, w, h):
     """The character (assets/sprites/avatar.png, stored at its native pixel size), scaled
     up by the browser with hard pixel edges, on the card's plain background. If the idle poses
     exist she breathes and glances at the text; otherwise she stands still."""
-    path = ASSETS / "sprites" / "avatar.png"
+    path = ASSETS / "sprites" / AVATAR
     if not path.exists():
         return None
     nw, nh = png_size(path)
-    scale = (h - 14) / nh
+    scale = int((h - 14) // nh)  # whole-number scale keeps every pixel square
     aw, ah = nw * scale * AVATAR_PIXEL[0], nh * scale * AVATAR_PIXEL[1]
     ax, ay = x + (w - aw) / 2, y + h - ah - 6
     lines = ""  # plain background behind her
@@ -212,7 +213,7 @@ def avatar_portrait(x, y, w, h):
     period, slots = AVATAR_LOOP
     files = sorted({f for f, _, _ in slots})
     if not all((ASSETS / "sprites" / f).exists() for f in files):
-        return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}' + img("avatar.png")
+        return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{BG}"/>{lines}' + img(AVATAR)
     css, els = [], []
     for i, f in enumerate(files):
         kf = {0.0: "hidden", 100.0: "hidden"}
@@ -313,7 +314,7 @@ def resolve_projects(repos):
 # ---- panels ---------------------------------------------------------------
 def info_card(stats):
     w = 840
-    portrait = embed_png("sprites/portrait.png", 24, 22, 184, 220)
+    portrait = avatar_portrait(24, 22, 184, 220) or embed_png("sprites/portrait.png", 24, 22, 184, 220)
     x = 236 if portrait else 24
     portrait = portrait or ""
     lines = [rule(x, 38, CFG["handle_line"], fill=TEXT, bold=True, lead=False)]
@@ -485,7 +486,7 @@ def readme(cards_data, more):
   </picture>
 </p>
 
-<p align="center"><sub>pixel art by getjared, kotnaszynce, shangri-la and Kenney, all CC0 · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
+<p align="center"><sub>character from Rupak's own design · scene, cats and icons: CC0 pixel art by kotnaszynce, shangri-la, getjared and Kenney · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
 '''
 
 

@@ -4,12 +4,12 @@
 </p>
 
 <p align="center">
-  <picture><img src="assets/info-card.svg?v=4a93c9dc" width="100%" alt="about.txt: AI/ML engineer (student), B.Tech CSE (AI/ML) at SRM IST, class of 28. Into machine learning, AI systems, backend and applied AI. Open to ML internships, summer 27. Live GitHub stats and contact details." /></picture>
+  <picture><img src="assets/info-card.svg?v=38bbc88e" width="100%" alt="about.txt: AI/ML engineer (student), B.Tech CSE (AI/ML) at SRM IST, class of 28. Into machine learning, AI systems, backend and applied AI. Open to ML internships, summer 27. Live GitHub stats and contact details." /></picture>
 </p>
 
 <p align="center"><sub><a href="https://github.com/rupak2007">github</a> · <a href="https://www.linkedin.com/in/rupak-raj-bab83335b/">linkedin</a> · <a href="mailto:rupakraj.v@gmail.com">mail</a></sub></p>
 
-<p align="center"><picture><img src="assets/divider.svg?v=337073cf" width="100%" alt="" /></picture></p>
+<p align="center"><picture><img src="assets/divider.svg?v=38ce7138" width="100%" alt="" /></picture></p>
 <p align="center">
   <a href="https://github.com/rupak2007/tracewright"><picture><img src="assets/card-tracewright.svg?v=63a4eecb" width="49%" alt="Tracewright: network incident investigation" /></picture></a>
   <a href="https://github.com/rupak2007/ciphraud"><picture><img src="assets/card-ciphraud.svg?v=3857c752" width="49%" alt="Ciphraud: fraud detection on encrypted data" /></picture></a>
@@ -32,4 +32,4 @@
   </picture>
 </p>
 
-<p align="center"><sub>pixel art by getjared, kotnaszynce, shangri-la and Kenney, all CC0 · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
+<p align="center"><sub>character from Rupak's own design · scene, cats and icons: CC0 pixel art by kotnaszynce, shangri-la, getjared and Kenney · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
