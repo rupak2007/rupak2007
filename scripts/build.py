@@ -385,7 +385,7 @@ def readme(cards_data, more):
                f'alt="{escape(p["name"].title())}: {escape(p["subtitle"])}" />')
         return f'  <a href="{p["repo"]}">{img}</a>' if p.get("repo") else f"  {img}"
     cards = "\n".join(card(p) for p in cards_data)
-    hero = ('<img src="assets/hero.svg" width="100%" alt="RUPAK RAJ in pixel letters over a night riverside: '
+    hero = ('<img src="assets/hero.svg" width="100%" alt="A night riverside in pixel art: '
             'a blossoming tree, a person and a cat on a ledge, a train crossing the bridge." />'
             if (ASSETS / "hero.svg").exists() else "<!-- hero.svg goes here -->")
     links = CFG.get("contact_links", {})

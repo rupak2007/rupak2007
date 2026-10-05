@@ -6,8 +6,8 @@
   makes three poses from those same pixels: rest, breathing in (shoulders up 1px), and a
   glance toward the cat (head 1px over).
 * cat_frames() builds the sitting cat from shangri-la's CC0 "A Cat" idle sheet: its two
-  sitting frames (tail down / tail flicked) and a blink, flipped to face the person and
-  toned to match the scene's figures, eyes in the accent colour.
+  sitting frames (tail down / tail flicked), flipped to face the person and toned to match
+  the scene's figures as a flat silhouette.
 """
 import pathlib
 
@@ -118,11 +118,11 @@ def person_frames(raw_f0, graded_f0):
 
 
 # ---- the cat ----------------------------------------------------------------
-def cat_frames(body, edge, light, eye):
+def cat_frames(body, edge, light):
     """Sitting frames from the idle sheet: (0,0) tail down, (2,2) tail flicked."""
     sheet = Image.open(CAT_SHEET).convert("RGBA")
 
-    def tone(cell, blink=False):
+    def tone(cell):
         out = Image.new("RGBA", cell.size, (0, 0, 0, 0))
         for y in range(cell.height):
             for x in range(cell.width):
@@ -130,8 +130,8 @@ def cat_frames(body, edge, light, eye):
                 if not a:
                     continue
                 s = r + g + b
-                if s > 500:                       # the sheet's whites: eyes on the head row, else chest/paws
-                    c = eye if (y == 8 and not blink) else (body if y == 8 else light)
+                if s > 500 and y != 8:            # the sheet's whites: chest and paws (eyes stay flat)
+                    c = light
                 else:
                     c = body                          # one flat tone, like the person's silhouette
                 out.putpixel((x, y), c + (255,))
@@ -139,7 +139,7 @@ def cat_frames(body, edge, light, eye):
 
     sit = sheet.crop((0, 0, 16, 16))
     flick = sheet.crop((32, 32, 48, 48))
-    frames = {"sit": tone(sit), "blink": tone(sit, blink=True), "flick": tone(flick)}
+    frames = {"sit": tone(sit), "flick": tone(flick)}
     bb = frames["sit"].getchannel("A").getbbox()
     origin = (CAT_RIGHT - (bb[2] - 1), GROUND - (bb[3] - 1))
     return origin, frames

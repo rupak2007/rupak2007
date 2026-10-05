@@ -17,9 +17,7 @@ from night import H, night_frames  # noqa: E402
 from scene_edit import Editor, cat_frames, person_frames  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SCALE, PAD_X, PAD_Y, BAR, W = 2, 16, 16, 27, 840
-NAME = "RUPAK RAJ"
-TEXT_X, NAME_Y = 118, 20  # in scene pixels
+SCALE, PAD_X, PAD_Y, BAR, W = 3, 36, 16, 27, 840  # 256px scene x3 fills the 840 window
 CROP_H = 110
 
 
@@ -118,8 +116,8 @@ def actor(cls, origin, poses, schedule, period, sx, sy):
 # person: breathes twice and glances at the cat once per 7.2s
 PERSON_LOOP = (7.2, [("rest", 0, 1.4), ("breath", 1.4, 2.8), ("rest", 2.8, 3.8), ("glance", 3.8, 5.0),
                      ("rest", 5.0, 5.8), ("breath", 5.8, 7.2)])
-# cat: sits, blinks, flicks its tail twice per 6s
-CAT_LOOP = (6.0, [("sit", 0, 2.2), ("blink", 2.2, 2.36), ("sit", 2.36, 3.6), ("flick", 3.6, 4.0),
+# cat: sits and flicks its tail twice per 6s
+CAT_LOOP = (6.0, [("sit", 0, 3.6), ("flick", 3.6, 4.0),
                   ("sit", 4.0, 4.2), ("flick", 4.2, 4.6), ("sit", 4.6, 6.0)])
 
 
@@ -136,10 +134,10 @@ def main():
     tones = Counter(c[:3] for c in p_poses["rest"].get_flattened_data() if c[3])
     body = tones.most_common(1)[0][0]
     lum = lambda c: 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
-    c_origin, c_poses = cat_frames(body, min(tones, key=lum), max(tones, key=lum), H(build.ACCENT))
+    c_origin, c_poses = cat_frames(body, min(tones, key=lum), max(tones, key=lum))
     sw, sh = scenes[0].width * SCALE, scenes[0].height * SCALE
     w, h = W, BAR + PAD_Y * 2 + sh
-    sx = w - PAD_X - sw  # scene sits on the right; the name gets its own column on the left
+    sx = (w - sw) // 2
     n, T = len(scenes), len(scenes) * duration / 1000
 
     frames = []
@@ -153,29 +151,16 @@ def main():
     style = (f"<style>.f{{visibility:hidden;animation:fr {T:.2f}s steps(1,end) infinite;"
              f"image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated}}"
              f"@keyframes fr{{0%{{visibility:visible}}{slot:.4f}%{{visibility:hidden}}100%{{visibility:hidden}}}}"
-             f".cur{{animation:bl 1.2s steps(1,end) infinite}}"
-             f"@keyframes bl{{0%{{opacity:1}}50%{{opacity:0}}100%{{opacity:0}}}}</style>")
+             f"</style>")
 
-    # name, stacked, in the 5x7 font at 6px per font pixel (a multiple of the scene's 2px grid)
-    px, lines = 6, NAME.split()
-    block_h = len(lines) * 7 * px + (len(lines) - 1) * 3 * px
-    nx, ny = PAD_X + 26, PAD_Y + (sh - block_h) // 2
-    name = ""
-    for k, word in enumerate(lines):
-        y = ny + k * 10 * px
-        name += build.pixel_text(word, nx + 3, y + 3, scale=px, fill="#06080b")
-        name += build.pixel_text(word, nx, y, scale=px, fill=build.TEXT)
-    last_end = nx + build.pixel_width(lines[-1], scale=px)
-    cur = (f'<rect class="cur" x="{last_end + px}" y="{ny + (len(lines) - 1) * 10 * px + 5 * px}" '
-           f'width="{4 * px}" height="{2 * px}" fill="{build.ACCENT}"/>')
     frame = (f'<rect x="{sx - .5}" y="{PAD_Y - .5}" width="{sw + 1}" height="{sh + 1}" '
              f'fill="none" stroke="{build.EDGE}"/>')
     p_css, p_els = actor("pp", p_origin, p_poses, PERSON_LOOP[1], PERSON_LOOP[0], sx, PAD_Y)
     c_css, c_els = actor("ct", c_origin, c_poses, CAT_LOOP[1], CAT_LOOP[0], sx, PAD_Y)
     style = style.replace("</style>", p_css + c_css + "</style>")
-    body = style + "".join(frames) + p_els + c_els + name + cur + frame
+    body = style + "".join(frames) + p_els + c_els + frame
     svg = build.window(w, h, "rupak.exe — 接続中…", body,
-                       label="RUPAK RAJ in pixel letters over a night riverside, a person and a cat on the ledge")
+                       label="A night riverside in pixel art: a person and a cat sitting on a ledge")
     out = ROOT / "assets" / "hero.svg"
     out.write_text(svg, encoding="utf-8")
     print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB", f"{w}x{h}", n, "frames")
