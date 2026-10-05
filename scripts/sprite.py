@@ -129,7 +129,7 @@ CAT_SHEET = ROOT / "raw" / "anime" / "Sprites" / "NPCs" / "Animals" / "sheet_cat
 
 
 def cat_walk():
-    """getjared's CC0 cat, side walk row (faces right), toned into the profile's greys."""
+    """getjared's CC0 cat, side walk row, mirrored to face right (his way), toned grey."""
     sheet_ = Image.open(CAT_SHEET).convert("RGBA")
     out = []
     for c in range(4):
@@ -143,7 +143,7 @@ def cat_walk():
                     L = lum(p)
                     t = OUTLINE if L < 40 else H("#2b313e") if L < 120 else H("#4d5566")
                     im.putpixel((x, y), t + (p[3],))
-        out.append(im)
+        out.append(im.transpose(Image.FLIP_LEFT_RIGHT))
     return out
 
 

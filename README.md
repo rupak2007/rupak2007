@@ -9,7 +9,7 @@
 
 <p align="center"><sub><a href="https://github.com/rupak2007">github</a> · <a href="https://www.linkedin.com/in/rupak-raj-bab83335b/">linkedin</a> · <a href="mailto:rupakraj.v@gmail.com">mail</a></sub></p>
 
-<p align="center"><picture><img src="assets/divider.svg?v=70ce3234" width="100%" alt="" /></picture></p>
+<p align="center"><picture><img src="assets/divider.svg?v=3902c175" width="100%" alt="" /></picture></p>
 <p align="center">
   <a href="https://github.com/rupak2007/tracewright"><picture><img src="assets/card-tracewright.svg?v=63a4eecb" width="49%" alt="Tracewright: network incident investigation" /></picture></a>
   <a href="https://github.com/rupak2007/ciphraud"><picture><img src="assets/card-ciphraud.svg?v=3857c752" width="49%" alt="Ciphraud: fraud detection on encrypted data" /></picture></a>
