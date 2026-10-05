@@ -1,6 +1,6 @@
 # Credits
 
-Everything visual on this profile is either human-made pixel art released under CC0, or drawn in code: `scripts/build.py` (window chrome, the 5×7 lettering, dividers, the dialog box) and `scripts/girl.py` (the character). The character's pixel maps were written by Claude (Anthropic's AI assistant), after a reference picture Rupak supplied; no pixels were copied from the reference and no image generator was used.
+The character is traced pixel for pixel from a reference picture Rupak supplied, then toned to the profile's greys and animated in code by `scripts/girl.py`. Everything else visual is either human-made pixel art released under CC0, or drawn in code by `scripts/build.py` (window chrome, the 5×7 lettering, dividers, the dialog box).
 
 | Asset | Author | Source | License | Used for |
 |---|---|---|---|---|
