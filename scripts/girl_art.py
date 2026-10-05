@@ -1,20 +1,23 @@
 """An original character for the profile, drawn pixel by pixel at the boy's scale (~48px).
 
 CHARACTER SPEC (every frame follows this)
-  hair       near-black blue, chin-length rounded bob; the fringe sweeps to her left in one
-             heavy cluster that half-covers her left eye; one stubborn cowlick tuft on the
-             crown; the bob's ends flick outward at the jaw
-  face       pale; heavy half-lidded eyes with a dark lid line over a small grey iris; a soft
-             shadow under each eye (always a bit tired); a 1px mouth, no blush
-  outfit     oversized charcoal-navy cardigan with sleeves past the wrists (only fingertips
-             show); light grey shirt collar points over the cardigan; a short muted-red tie
-             (her only colour); dark pleated skirt just above the knee under the cardigan's
-             hem; dark mid-calf socks; light chunky sneakers with a dark sole line
+  hair       near-black blue chin-length bob with a blunt, dead-straight fringe cut just
+             above the eyes; one long lock escapes the fringe and hangs over her left eye;
+             a stubby low tail tied at the nape with a dark band pokes out behind her; a
+             cowlick on the crown; the bob's ends flick out over her shoulders
+  face       pale; eyes nearly shut (a dark lid line with a single grey pixel of iris under
+             it), soft shadows under both eyes, a flat 2px mouth; always a little withdrawn
+  outfit     oversized charcoal-navy cardigan, dropped shoulders, sleeves past the wrists
+             (fingertips only), two grey buttons, a lighter knitted hem band; a rounded light
+             grey collar with a thin muted-red cord tied in a small knot (her only colour);
+             dark pleated skirt with one lighter stripe at the hem; dark mid-calf socks;
+             light chunky sneakers with a dark sole line
   palette    see PALETTE: 2-3 tones per material, one muted red, black outline
-  silhouette round bob head, slightly slouched shoulders, long-sleeved A-line cardigan
-             over a short skirt, thin legs, big shoes
+  silhouette round bob with a flat fringe line, hair flicks at the shoulders, the tail stub
+             at the back, a wide cardigan over a short skirt, thin legs, big shoes
 
-One letter per pixel. Rows may be ragged (padded on the right)."""
+One letter per pixel. FRONT is drawn as a left half and mirrored, then the asymmetric
+details (cowlick, loose lock, tail stub) are placed on top."""
 
 PALETTE = {
     ".": None,
@@ -32,6 +35,8 @@ PALETTE = {
     "z": (28, 31, 44),     # cardigan shadow
     "w": (206, 210, 218),  # collar
     "W": (150, 155, 166),  # collar shade
+    "b": (120, 126, 140),  # button
+    "t": (16, 17, 24),     # hair tie
     "r": (142, 58, 63),    # tie
     "R": (94, 37, 41),     # tie shade
     "p": (34, 37, 50),     # skirt
@@ -45,55 +50,78 @@ PALETTE = {
     "_": (5, 7, 10),       # ground shadow (translucent)
 }
 
-FRONT = """
-...........OO.........
-..........OhO.........
-.......OOOOhOOO.......
-.....OOhhhhhhhhOO.....
-....OhhhhhhhHHhhhO....
-...OhhhhhhhHHihhhhO...
-...OhhhhhhhhHHhhhhO...
-..OhhhhhhhhhhhhhhhhO..
-..OhhhhhhhhhhhhhhhhO..
-..OhhhhhhhhhhhhhhhhO..
-.OhhhhhhhhhhhhhhhhhhO.
-.OhhhOOhhhhhhhhhhhhhO.
-.OhhOssOOOhhhhhhhhhhO.
-.OhhOsssssOOOhhhhhhhO.
-.OhhOsEEEssssOOhhhhhO.
-.OhhOseEssssEEEOhhhhO.
-.OhhOskksssssekOhhhhO.
-.OhhOssssssssssOhhhhO.
-.OhhhOssssmsssOhhhhO..
-..OhhhOkssssskOhhhhhO.
-..OhhOOOkkkkOOOhhhOO..
-..OOOcOwWOkOWwOcOOO...
-..OccOwwwOrOwwwOccO...
-.OcccOOwOrROwOOcccO...
-.OccCcOOOrROOOcCccO...
-.OccCczcOrROczcCccO...
-.OccCczcOrRrOczcCcO...
-.OccCzccOOROOcczCccO..
-.OccCzcccOOOcccczCcO..
-.OczCzcccccccccczCcO..
-.OccOzcccccccccczOccO.
-.OsOOczcccccccczcOOsO.
-.OsOOczcccccccczcOsO..
-..OOOpqpPqpPqpPqpOO...
-....OpqpPqpPqpPqpO....
-....OpqpPqpPqpPqpqO...
-....OOOOOOOOOOOOOOO...
-......OskO...OksO.....
-......OssO...OssO.....
-......OssO...OssO.....
-......OxxO...OxxO.....
-......OxXO...OXxO.....
-......OxxO...OxxO.....
-.....OgggGO.OGgggO....
-.....OggggO.OggggO....
-.....OnnnnO.OnnnnO....
-.....OOOOOO.OOOOOO....
+# left half of the front view (columns 0-10); the right half is its mirror
+_FRONT_HALF = """
+...........
+...........
+.......OOOO
+.....OOhhhh
+....Ohhhhhh
+...OhhhhhhH
+...OhhhhhhH
+..Ohhhhhhhh
+..Ohhhhhhhh
+..Ohhhhhhhh
+.Ohhhhhhhhh
+.Ohhhhhhhhh
+.OhhOOOOOOO
+.OhhOssssss
+.OhhOsEEEss
+.OhhOskeEss
+.OhhOkkksss
+.OhhOssssss
+.OhhhOssssm
+.OhhhOkssss
+OhhhhhOOOkk
+OhOOcOOwwwk
+.OccOwwwwwO
+.OcccOwwwOr
+.OczccOOOrR
+.Oczccczccr
+.Oczccczccz
+.Oczccczccb
+.Oczccczccz
+.Oczccczccz
+.Oczccczccb
+.OsOCcczccz
+.OsOCCCCCCC
+..OOOOOOOOO
+...OpqpPqpP
+....OpqpPqp
+....OPPPPPP
+....OOOOOOO
+......OskO.
+......OssO.
+......OssO.
+......OxxO.
+......OxXO.
+......OxxO.
+.....OgggGO
+.....OggggO
+.....OnnnnO
+.....OOOOOO
 """
+
+
+def _mirror_front():
+    rows = [r.ljust(11, ".") for r in _FRONT_HALF.strip("\n").split("\n")]
+    g = [list(r + r[::-1]) for r in rows]
+
+    def put(y, x, txt):
+        for i, c in enumerate(txt):
+            if c != "?":
+                g[y][x + i] = c
+    put(0, 12, "OO")        # cowlick curling toward her left
+    put(1, 11, "OhhO")
+    put(2, 11, "hh")
+    for y, txt in ((12, "hhO"), (13, "hhO"), (14, "Ohh"), (15, "?hh"), (16, "?Oh"), (17, "??O")):
+        put(y, 12, txt)     # the loose lock over her left eye
+    put(19, 21, "O")        # tail stub poking out past her right shoulder
+    put(20, 0, "Oh")
+    return "\n".join("".join(r) for r in g)
+
+
+FRONT = _mirror_front()
 
 # side view, facing right ----------------------------------------------------------------
 SIDE_HEAD = """
@@ -108,35 +136,47 @@ SIDE_HEAD = """
 ..OhhhhhhhhhhhhhhhhhO.
 ..OhhhhhhhhhhhhhhhhhhO
 ..OhhhhhhhhhhhhhhhhhhO
-..OhhhhhhhhhhhhhOOhhOO
-..OhhhhhhhhhhhhOsssOhO
-..OhhhhhhhhhhhOssssOO.
-..OhhhhhhhhhhOsEEEssO.
-..OhhhhhhhhhhOssEesssO
-..OhhhhhhhhhhOkksssssO
-..OhhhhhhhhhOOssssmsO.
-...OhhhhhhhhhOkksssO..
-..OhhhhhhhhhhOOkkkO...
-.OhOOOhhhhhhOO.OkO....
+..OhhhhhhhhhhhhhhhhhhO
+..OhhhhhhhhhhhhhOOOOOO
+..OhhhhhhhhhhhhOhssssO
+..OhhhhhhhhhhhOhsEEEsO
+..OhhhhhhhhhhhOhskeEssO
+..OhhhhhhhhhhhOkkkssssO
+..OhhhhhhhhhhOOsssmsO..
+..OhhhhhhhhhhOkksssO...
+...OhhhhhhhhhOOkkkO....
+....OOhhhhhhOO.OkO.....
 """
+
+# the stubby low tail, tied at the nape; drawn behind the head so it pokes out at the back
+TAIL = """
+..Ott
+.OhtO
+OhhhO
+OhHhO
+.OhhO
+.OhO.
+..O..
+"""
+TAIL_AT = (1, 17)    # top-left on the side canvas, before the 4px margin
 
 # torso without the near arm; the arm is its own piece so it can swing
 SIDE_TORSO = """
-.....OOOOOOOwWwO......
-.....OcccccOwOrO......
-.....OcccccOwrRO......
-.....OccCccczOrO......
-.....OccCcccczRO......
-.....OcCcccccczO......
+.....OOOOOOOOwwwO.....
+.....OcccccOwwwwO.....
+.....OcccccczOrRO.....
+.....OccCcccczOrO.....
+.....OccCccccczrO.....
 .....OcCccccccczO.....
-.....OcCccccccczO.....
-.....OcCccccccczO.....
-.....OcCccccccczO.....
+.....OcCcccccccbO.....
 .....OcCcccccccczO....
+.....OcCccccccccbO....
+.....OcCcccccccczO....
+.....OCCCCCCCCCCCO....
 .....OOOOOOOOOOOOO....
 .....OpqpPqpPqpPqO....
 .....OpqpPqpPqpPqpO...
-.....OpqpPqpPqpPqpO...
+.....OPPPPPPPPPPPPO...
 .....OOOOOOOOOOOOOO...
 """
 

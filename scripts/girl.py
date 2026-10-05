@@ -84,8 +84,10 @@ def front_frames():
         if blink[EYES[1]][x] in "eE":
             blink[EYES[1]][x] = "E"
     sway = [r[:] for r in base]           # the cowlick tips over a pixel
-    for y in (0, 1):
-        sway[y] = ["."] + base[y][:-1]
+    for y in (0, 1, 2):
+        sway[y] = base[y][:]
+        if y < 2:
+            sway[y] = base[y][1:] + ["."]
     return [rest, breath, blink, sway]
 
 
@@ -125,11 +127,11 @@ def side_frame(k):
     over(f, leg_layer(NEAR[k], NEAR_LIFT[k], False))
     up = blank(H, W)
     head = grid(A.SIDE_HEAD)
-    if TUFT[k]:
+    if TUFT[k]:                 # the cowlick trails a pixel as she rises
         for y in range(0, 3):
-            head[y] = head[y][1:] + ["."] if TUFT[k] < 0 else ["."] + head[y][:-1]
-        for y in range(17, 21):   # the bob's ends at her nape trail with the tuft
-            head[y] = head[y][1:] + ["."] if head[y][1] != "." else head[y]
+            head[y] = head[y][1:] + ["."]
+    tx, ty = A.TAIL_AT
+    over(up, grid(A.TAIL), X0 + tx + TUFT[k], ty + (1 if BOB[k] < 0 else 0))  # the tail lags the bob
     over(up, grid(A.SIDE_TORSO), X0, len(head))
     ax, ay = A.ARM_AT
     arm = blank(H, W)
