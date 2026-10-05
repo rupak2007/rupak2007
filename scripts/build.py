@@ -316,7 +316,7 @@ def resolve_projects(repos):
 # ---- panels ---------------------------------------------------------------
 def info_card(stats):
     w = 840
-    portrait = avatar_portrait(24, 22, 184, 220) or embed_png("sprites/portrait.png", 24, 22, 184, 220)
+    portrait = embed_png("sprites/portrait.png", 24, 22, 184, 220)
     x = 236 if portrait else 24
     portrait = portrait or ""
     lines = [rule(x, 38, CFG["handle_line"], fill=TEXT, bold=True, lead=False)]
@@ -488,7 +488,7 @@ def readme(cards_data, more):
   </picture>
 </p>
 
-<p align="center"><sub>pixel art: original character drawn for this profile · scene, cats and icons CC0 by kotnaszynce, shangri-la, getjared and Kenney · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
+<p align="center"><sub>pixel art by getjared, kotnaszynce, shangri-la and Kenney, all CC0 · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
 '''
 
 

@@ -125,6 +125,74 @@ def main():
     print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB")
 
 
+CAT_SHEET = ROOT / "raw" / "anime" / "Sprites" / "NPCs" / "Animals" / "sheet_cat.png"
+
+
+def cat_walk():
+    """getjared's CC0 cat, side walk row (faces right), toned into the profile's greys."""
+    sheet_ = Image.open(CAT_SHEET).convert("RGBA")
+    out = []
+    for c in range(4):
+        cl = sheet_.crop((c * 64, 64, c * 64 + 64, 128))
+        f = cl.crop(cl.getbbox())
+        im = Image.new("RGBA", f.size)
+        for y in range(f.height):
+            for x in range(f.width):
+                p = f.getpixel((x, y))
+                if p[3]:
+                    L = lum(p)
+                    t = OUTLINE if L < 40 else H("#2b313e") if L < 120 else H("#4d5566")
+                    im.putpixel((x, y), t + (p[3],))
+        out.append(im)
+    return out
+
+
+def divider_with_cat():
+    """The boy walking the rule (unchanged: same frames, pace and loop) with a cat trotting
+    a few steps behind him."""
+    import base64, io
+
+    def b64(im):
+        buf = io.BytesIO()
+        im.save(buf, "PNG", optimize=True)
+        return base64.b64encode(buf.getvalue()).decode()
+
+    sh = sheet()
+    W, Hh, rule_y, speed, step = 840, 64, 58, 3, 0.12
+    walk = [cell(sh, 2, c) for c in range(4)]  # row 2 faces right
+    cats = cat_walk()
+    cw, ch = cats[0].size
+    boy_left = walk[0].getbbox()[0]
+    cat_x = boy_left - 6 - cw                 # just behind his heels
+    start, end = -40 + min(0, cat_x), W - min(0, cat_x)
+    pix = "image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated"
+    boy = "".join(f'<image class="w" style="animation-delay:{k * step - 4 * step:.2f}s" width="64" height="64" '
+                  f'href="data:image/png;base64,{b64(f)}"/>' for k, f in enumerate(walk))
+    cstep = 0.15
+    cat = "".join(f'<image class="c" style="animation-delay:{k * cstep - 4 * cstep:.2f}s" x="{cat_x}" '
+                  f'y="{rule_y - ch + 1}" width="{cw}" height="{ch}" href="data:image/png;base64,{b64(f)}"/>'
+                  for k, f in enumerate(cats))
+    travel = (end - start) / speed * step
+    T = travel + 20 * step
+    done = travel / T * 100
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{Hh}" viewBox="0 0 {W} {Hh}" role="img" aria-label="divider">
+<style>
+.mv{{animation:mv {T:.2f}s linear infinite}}
+@keyframes mv{{0%{{transform:translate({start}px,0px)}}{done:.3f}%{{transform:translate({end}px,0px)}}100%{{transform:translate({end}px,0px)}}}}
+.w{{visibility:hidden;{pix};animation:wk {4 * step:.2f}s steps(1,end) infinite}}
+@keyframes wk{{0%{{visibility:visible}}25%{{visibility:hidden}}100%{{visibility:hidden}}}}
+.c{{visibility:hidden;{pix};animation:ck {4 * cstep:.2f}s steps(1,end) infinite}}
+@keyframes ck{{0%{{visibility:visible}}25%{{visibility:hidden}}100%{{visibility:hidden}}}}
+</style>
+<rect x="0" y="{rule_y}" width="{W}" height="1" fill="{build.FAINT}"/>
+<g class="mv">{cat}{boy}</g>
+</svg>
+"""
+    out = ROOT / "assets" / "divider.svg"
+    out.write_text(svg, encoding="utf-8")
+    print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB")
+
+
 ICONS = {"tracewright": (37, 11), "ciphraud": (33, 11)}  # Kenney 1-Bit Pack tiles (col, row)
 
 
@@ -140,4 +208,5 @@ def icons():
 
 
 if __name__ == "__main__":
+    divider_with_cat()
     icons()  # the character itself now comes from character.py; main() is the previous one
