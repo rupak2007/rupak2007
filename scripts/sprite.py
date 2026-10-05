@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Project icons (Kenney 1-Bit Pack). main() is the previous character, built from getjared's
-CC0 anime-collection paperdoll layers, kept in case it comes back; character.py replaced it.
+"""Project icons (Kenney 1-Bit Pack). main() is the previous character (the boy), built from getjared's
+CC0 anime-collection paperdoll layers, kept in case he comes back; girl.py replaced him.
 It built the recurring character from getjared's CC0 anime-collection paperdoll layers
 (walk base + black school uniform + hair), re-tones each layer into the profile's greys,
 and writes:
@@ -140,4 +140,4 @@ def icons():
 
 
 if __name__ == "__main__":
-    icons()  # the character itself now comes from character.py; main() is the previous one
+    icons()  # the character itself now comes from girl.py; main() is the previous one
