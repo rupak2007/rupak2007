@@ -5,7 +5,7 @@ grid (39x91), background removed, and toned into the profile's greys with the bo
 accent colour. Writes:
   assets/sprites/avatar.png    native pixels for the info card (avatar.py makes its idle poses)
   assets/sprites/portrait.png  2x still, the info card's fallback
-  assets/divider.svg           standing on the divider rule, breathing and blinking
+  assets/divider.svg           walking the divider rule, with a cat trotting behind her
 Run: python3 scripts/character.py
 """
 import base64
@@ -157,37 +157,94 @@ def portrait(im):
     print("wrote", out)
 
 
+LEGS = {"left": range(6, 19), "right": range(19, 31)}  # columns, below the skirt hem
+HEM = 68                                                # first leg row
+CAT_SHEET = ROOT / "raw" / "anime" / "Sprites" / "NPCs" / "Animals" / "sheet_cat.png"
+
+
+def walk_frames(im):
+    """A front-facing walk made by moving her own pixels: one foot lifts a pixel (its leg loses
+    a row of sock, so the leg stays joined to the hem), then a passing frame with her whole body
+    a pixel higher, then the other foot. Nothing new is drawn."""
+    w, h = im.size
+
+    def step(side):
+        out = Image.new("RGBA", (w, h + 1), (0, 0, 0, 0))
+        out.alpha_composite(im, (0, 1))
+        src = out.copy()
+        for x in LEGS[side]:
+            for y in range(HEM + 2, h + 1):  # skip the sock's top row; everything below rises
+                out.putpixel((x, y - 1), src.getpixel((x, y)))
+            out.putpixel((x, h), (0, 0, 0, 0))
+        return out
+
+    up = Image.new("RGBA", (w, h + 1), (0, 0, 0, 0))
+    up.alpha_composite(im, (0, 0))
+    return [step("left"), up, step("right"), up]
+
+
+def cat_walk():
+    """getjared's CC0 cat walking right (row 2 of the sheet), toned to the profile's greys,
+    soft shadow dropped."""
+    sheet = Image.open(CAT_SHEET).convert("RGBA")
+    tones = {"outline": OUTLINE, "body": H("#6e7681"), "light": H("#aab3be"), "shade": H("#434c59")}
+    frames = []
+    for c in range(4):
+        cell = sheet.crop((c * 64, 128, c * 64 + 64, 192))
+        out = Image.new("RGBA", cell.size, (0, 0, 0, 0))
+        for y in range(64):
+            for x in range(64):
+                r, g, b, a = cell.getpixel((x, y))
+                if a < 255:
+                    continue
+                L = lum((r, g, b))
+                t = "outline" if L < 70 else ("shade" if L < 160 else ("light" if r > 225 else "body"))
+                out.putpixel((x, y), tones[t] + (255,))
+        frames.append(out)
+    box = None
+    for f in frames:
+        bb = f.getchannel("A").getbbox()
+        box = bb if box is None else (min(box[0], bb[0]), min(box[1], bb[1]), max(box[2], bb[2]), max(box[3], bb[3]))
+    return [f.crop(box) for f in frames]
+
+
 def divider(im):
-    """She stands on the rule and idles: breathes, blinks. Pixelated scaling, transparent bg."""
-    P = poses(im)
-    W, s = 840, 1
-    fw, fh = P["rest"].size
-    rule_y = fh + 2
+    """She walks the rule left to right with a cat trotting behind her, then a pause off-stage.
+    Animated SVG (always plays on GitHub), pixelated scaling, transparent background."""
+    girl, cat = walk_frames(im), cat_walk()
+    W, step_s, speed = 840, 0.14, 3           # one frame every 140ms, 3px per frame
+    gw, gh = girl[0].size
+    cw, ch_ = cat[0].size
+    rule_y = gh + 2
     Hh = rule_y + 4
-    x = 28
-    T = 6.0
-    sched = [("rest", 0, 1.6), ("breath", 1.6, 3.0), ("rest", 3.0, 3.9), ("blink", 3.9, 4.05),
-             ("rest", 4.05, 4.6), ("breath", 4.6, 6.0)]
-    css, els = [], []
-    for pose, img in P.items():
-        kf = {0.0: "hidden", 100.0: "hidden"}
-        for p, a, b in sched:
-            if p == pose:
-                kf[round(b / T * 100, 3)] = "hidden"
-        for p, a, b in sched:
-            if p == pose:
-                kf[round(a / T * 100, 3)] = "visible"
-        css.append(f"@keyframes g-{pose}{{" + "".join(f"{k}%{{visibility:{v}}}" for k, v in sorted(kf.items())) + "}")
-        css.append(f".g-{pose}{{visibility:hidden;animation:g-{pose} {T}s steps(1,end) infinite;"
-                   "image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated}")
-        els.append(f'<image class="g-{pose}" x="{x}" y="{rule_y - fh}" width="{fw * s}" height="{fh * s}" '
-                   f'href="data:image/png;base64,{b64(img)}"/>')
+    gap = 26                                  # cat trails her by this many px
+    start, end = -(gw + gap + cw + 4), W + 4
+    travel = (end - start) / speed * step_s
+    T = round(travel + 3.0, 2)                # then three seconds off-stage
+    done = travel / T * 100
+    pix = "image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated"
+    cyc = len(girl) * step_s
+
+    def frames(prefix, imgs, x, y):
+        els = []
+        for k, f in enumerate(imgs):
+            els.append(f'<image class="{prefix}" style="animation-delay:{k * step_s - cyc:.2f}s" x="{x}" y="{y}" '
+                       f'width="{f.width}" height="{f.height}" href="data:image/png;base64,{b64(f)}"/>')
+        return "".join(els)
+
+    css = (f".mv{{animation:mv {T}s linear infinite}}"
+           f"@keyframes mv{{0%{{transform:translateX({start}px)}}{done:.3f}%{{transform:translateX({end}px)}}"
+           f"100%{{transform:translateX({end}px)}}}}"
+           f".g,.c{{visibility:hidden;{pix};animation:st {cyc:.2f}s steps(1,end) infinite}}"
+           f"@keyframes st{{0%{{visibility:visible}}25%{{visibility:hidden}}100%{{visibility:hidden}}}}")
+    body = (frames("g", girl, cw + gap, rule_y - gh) + frames("c", cat, 0, rule_y - ch_))
     svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{Hh}" viewBox="0 0 {W} {Hh}" '
-           f'role="img" aria-label="divider">\n<style>{"".join(css)}</style>\n'
-           f'<rect x="0" y="{rule_y}" width="{W}" height="1" fill="{build.FAINT}"/>\n{"".join(els)}\n</svg>\n')
+           f'role="img" aria-label="divider">\n<style>{css}</style>\n'
+           f'<rect x="0" y="{rule_y}" width="{W}" height="1" fill="{build.FAINT}"/>\n'
+           f'<g class="mv">{body}</g>\n</svg>\n')
     out = ROOT / "assets" / "divider.svg"
     out.write_text(svg, encoding="utf-8")
-    print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB")
+    print("wrote", out, f"{out.stat().st_size / 1024:.0f} KB", f"loop {T}s")
 
 
 if __name__ == "__main__":
