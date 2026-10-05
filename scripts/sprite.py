@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Builds the recurring character from getjared's CC0 anime-collection paperdoll layers
+"""Project icons (Kenney 1-Bit Pack). main() is the previous character, built from getjared's
+CC0 anime-collection paperdoll layers, kept in case it comes back; character.py replaced it.
+It built the recurring character from getjared's CC0 anime-collection paperdoll layers
 (walk base + black school uniform + hair), re-tones each layer into the profile's greys,
 and writes:
   assets/divider.svg           the character walking across a thin rule
@@ -138,5 +140,4 @@ def icons():
 
 
 if __name__ == "__main__":
-    main()
-    icons()
+    icons()  # the character itself now comes from character.py; main() is the previous one

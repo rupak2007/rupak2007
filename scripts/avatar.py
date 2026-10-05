@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Idle poses for the info-card portrait, made only by moving existing pixels of
-assets/sprites/avatar.png (Rupak's own art). Nothing is drawn.
+assets/sprites/avatar.png (written by character.py). Nothing is drawn.
 
   avatar-breath.png  head, shoulders and torso (rows 0..WAIST) one pixel higher; the waist
                      row is held in place so the body stays joined
@@ -14,7 +14,7 @@ from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPRITES = ROOT / "assets" / "sprites"
-WAIST, NECK = 40, 28
+WAIST, NECK = 46, 30  # rows in avatar.png as written by character.py (1px top padding)
 
 
 def shifted(src, rows, dx=0, dy=0, keep_seam=None):

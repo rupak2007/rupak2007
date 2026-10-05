@@ -181,7 +181,7 @@ def png_size(path):
     return struct.unpack(">II", head[16:24])
 
 
-AVATAR_PIXEL = (1.09, 1.0)  # the portrait was drawn on slightly wide pixels; keep its proportions
+AVATAR_PIXEL = (1.04, 1.0)  # its source grid is 5.38 x 5.16 px; keep those proportions
 
 
 # idle loop for the portrait: (pose file, start s, end s); poses come from scripts/avatar.py
@@ -190,7 +190,7 @@ AVATAR_LOOP = (6.4, [("avatar.png", 0, 1.6), ("avatar-breath.png", 1.6, 3.2), ("
 
 
 def avatar_portrait(x, y, w, h):
-    """Rupak's own portrait (assets/sprites/avatar.png, stored at its native pixel size), scaled
+    """The character (assets/sprites/avatar.png, stored at its native pixel size), scaled
     up by the browser with hard pixel edges, standing on faint CRT scanlines. If the idle poses
     exist she breathes and glances at the text; otherwise she stands still."""
     path = ASSETS / "sprites" / "avatar.png"
@@ -485,7 +485,7 @@ def readme(cards_data, more):
   </picture>
 </p>
 
-<p align="center"><sub>pixel art by getjared, kotnaszynce and Kenney, all CC0 · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
+<p align="center"><sub>scene and cat: CC0 pixel art by kotnaszynce and shangri-la · icons: Kenney (CC0) · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
 '''
 
 

@@ -32,4 +32,4 @@
   </picture>
 </p>
 
-<p align="center"><sub>pixel art by getjared, kotnaszynce and Kenney, all CC0 · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
+<p align="center"><sub>scene and cat: CC0 pixel art by kotnaszynce and shangri-la · icons: Kenney (CC0) · logos via Simple Icons · <a href="CREDITS.md">credits</a></sub></p>
