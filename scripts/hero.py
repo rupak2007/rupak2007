@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import build  # noqa: E402  (tokens + pixel font)
 from night import H, night_frames  # noqa: E402
+from scene_edit import Editor  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCALE, PAD_X, PAD_Y, BAR, W = 2, 16, 16, 27, 840
@@ -86,7 +87,8 @@ def png_b64(im):
 def main():
     """hero.svg: an animated SVG, not a GIF. GitHub puts a click-to-play control on GIFs for
     viewers whose animation setting is off; SVG animations always run."""
-    scenes, duration = night_frames(ROOT / "raw" / "cityscape.gif")
+    src = ROOT / "raw" / "cityscape.gif"
+    scenes, duration = night_frames(src, edit=Editor(Image.open(src)))  # person + cat on the ledge
     scenes = [f.crop((0, 0, f.width, CROP_H)) for f in scenes]  # drop the empty bottom steps
     sw, sh = scenes[0].width * SCALE, scenes[0].height * SCALE
     w, h = W, BAR + PAD_Y * 2 + sh

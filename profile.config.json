@@ -84,12 +84,6 @@
       "repo": ""
     }
   ],
-  "more_projects": [
-    [
-      "vellum/",
-      "post-quantum evidence for key ceremonies"
-    ]
-  ],
   "stack": [
     [
       "ml",
@@ -127,5 +121,10 @@
     "github": "https://github.com/rupak2007",
     "linkedin": "https://www.linkedin.com/in/rupak-raj-bab83335b/",
     "mail": "mailto:rupakraj.v@gmail.com"
-  }
+  },
+  "exclude": [
+    "Voice2Invoice",
+    "Sarga-Project"
+  ],
+  "descriptions": {}
 }

@@ -51,12 +51,14 @@ def grade(c, y, foreground_y):
     lo, hi = (LEDGE_LO, LEDGE_HI) if y >= foreground_y else (CITY_LO, CITY_HI)
     return mix(lo, hi, max(0, min(1, (L - 110) / 90)))
 
-def night_frames(src, foreground_y=90):
+def night_frames(src, foreground_y=90, edit=None):
     im = Image.open(src)
     out, cache = [], {}
     for i in range(im.n_frames):
         im.seek(i)
         f = im.convert("RGB")
+        if edit:
+            f = edit(f)
         px = f.load()
         for y in range(f.height):
             region = 0 if y < HORIZON else (1 if y < foreground_y else 2)

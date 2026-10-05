@@ -207,6 +207,52 @@ def fetch_stats():
     return stats
 
 
+def fetch_repos():
+    """Public, owned repos, newest push first. Cached in assets/repos.json like the stats."""
+    cache = ASSETS / "repos.json"
+    repos = json.loads(cache.read_text()) if cache.exists() else []
+    token, user = os.environ.get("GITHUB_TOKEN"), CFG["github_user"]
+    if not token or user == "YOUR_USERNAME":
+        return repos
+    q = """query($u:String!){user(login:$u){repositories(first:100,ownerAffiliations:OWNER,privacy:PUBLIC,
+      orderBy:{field:PUSHED_AT,direction:DESC}){nodes{name description url isFork isArchived pushedAt
+      primaryLanguage{name}}}}}"""
+    req = urllib.request.Request("https://api.github.com/graphql",
+                                 data=json.dumps({"query": q, "variables": {"u": user}}).encode(),
+                                 headers={"Authorization": f"bearer {token}", "User-Agent": "profile-build"})
+    try:
+        nodes = json.load(urllib.request.urlopen(req, timeout=30))["data"]["user"]["repositories"]["nodes"]
+    except Exception as e:  # keep the last good list rather than emptying the page
+        print("repo fetch failed:", e)
+        return repos
+    repos = [{"name": n["name"], "description": n["description"] or "", "url": n["url"],
+              "language": (n["primaryLanguage"] or {}).get("name", ""), "pushed_at": n["pushedAt"],
+              "fork": n["isFork"], "archived": n["isArchived"]} for n in nodes]
+    cache.write_text(json.dumps(repos, indent=1))
+    return repos
+
+
+def resolve_projects(repos):
+    """Flagship cards keep their hand-written text but pick up the live repo link and language.
+    Every other public repo is listed in projects.sh automatically, unless it is excluded."""
+    user = CFG["github_user"].lower()
+    skip = {n.lower() for n in CFG.get("exclude", [])} | {user}
+    live = {r["name"].lower(): r for r in repos if not r.get("fork") and not r.get("archived")}
+    cards = []
+    for p in CFG["projects"]:
+        p, r = dict(p), live.get(p["id"].lower())
+        if r:
+            p.update(repo=r["url"], status="public", lang=(r.get("language") or p["lang"]).lower())
+        cards.append(p)
+    flagship = {p["id"].lower() for p in CFG["projects"]}
+    more = [r for k, r in live.items() if k not in flagship and k not in skip]
+    more.sort(key=lambda r: r.get("pushed_at", ""), reverse=True)
+    fallback = {k.lower(): v for k, v in CFG.get("descriptions", {}).items()}
+    for r in more:  # the repo's own GitHub description; config text only if it has none
+        r["blurb"] = r.get("description") or fallback.get(r["name"].lower(), "")
+    return cards, more
+
+
 # ---- panels ---------------------------------------------------------------
 def info_card(stats):
     w = 840
@@ -261,18 +307,30 @@ def project_card(p):
                   label=f'{p["name"].title()}: {p["subtitle"]}')
 
 
-def projects_ls():
-    w, h = 840, 196
+def projects_ls(more):
+    w = 840
+    col = max([12] + [len(r["name"]) + 3 for r in more])
     rows = [f'<text x="20" y="34" font-size="13" xml:space="preserve">{tspan("~/projects", ACCENT)}{tspan(" $ ", MUTED)}{tspan("ls -l --more", TEXT)}</text>']
-    y = 58
-    for name, desc in CFG["more_projects"]:
-        rows.append(f'<text x="20" y="{y}" font-size="13" xml:space="preserve">{tspan("drwxr-x  ", FAINT)}'
-                    f'{tspan(name.ljust(12), TEXT)}{tspan(desc, DIM)}</text>')
+    y, right = 58, 0
+    if not more:
+        rows.append(f'<text x="20" y="{y}" font-size="13" fill="{FAINT}">total 0</text>')
         y += 22
-    rows.append(f'<text x="20" y="{y + 4}" font-size="13" xml:space="preserve">{tspan("~/projects", ACCENT)}{tspan(" $ ", MUTED)}</text>'
-                f'<rect x="{20 + 13 * CH}" y="{y - 8}" width="8" height="14" fill="{TEXT}"/>')
+    for r in more:
+        name, blurb = r["name"] + "/", r["blurb"]
+        room = int((w - 24 - 20) / CH) - 9 - col
+        if len(blurb) > room:
+            blurb = blurb[:room - 1].rstrip() + "…"
+        rows.append(f'<text x="20" y="{y}" font-size="13" xml:space="preserve">{tspan("drwxr-x  ", FAINT)}'
+                    f'{tspan(name.ljust(col), TEXT)}{tspan(blurb, DIM)}</text>')
+        right = max(right, 20 + (9 + col + len(blurb)) * CH)
+        y += 22
+    prompt_y = y + 4
+    rows.append(f'<text x="20" y="{prompt_y}" font-size="13" xml:space="preserve">{tspan("~/projects", ACCENT)}{tspan(" $ ", MUTED)}</text>'
+                f'<rect x="{20 + 13 * CH}" y="{prompt_y - 12}" width="8" height="14" fill="{TEXT}"/>')
     # a deadpan dialog left open on the desktop
-    dx, dy, dw, dh = 594, 26, 222, 112
+    dx, dw, dh = 594, 222, 112
+    dy = 26 if right < dx - 16 else prompt_y - 14  # beside the rows if they leave room, else below
+    h = max(196, 27 + dy + dh + 31, 27 + prompt_y + 30)
     dialog = (f'<rect x="{dx + 4}" y="{dy + 4}" width="{dw}" height="{dh}" fill="#010409"/>'
               f'<rect x="{dx}" y="{dy}" width="{dw}" height="{dh}" fill="{BAR}"/>'
               f'<rect x="{dx}" y="{dy}" width="{dw}" height="20" fill="{BEVEL}"/>'
@@ -290,7 +348,7 @@ def projects_ls():
               f'<text x="{dx + 164}" y="{dy + 97}" font-size="11" fill="{DIM}">wait.</text>'
               f'<rect x="{dx + .5}" y="{dy + .5}" width="{dw - 1}" height="{dh - 1}" fill="none" stroke="{EDGE}"/>')
     return window(w, h, "projects.sh", "".join(rows) + dialog,
-                  label="More projects: " + ", ".join(n.rstrip("/") for n, _ in CFG["more_projects"]))
+                  label="More projects: " + (", ".join(r["name"] for r in more) or "none yet"))
 
 
 SHORT = {"githubactions": "actions", "scikitlearn": "sklearn"}
@@ -319,22 +377,26 @@ def stack_panel():
                   ", ".join(ICONS[s]["title"] for _, sl in groups for s in sl))
 
 
-def readme():
+def readme(cards_data, more):
     user = CFG["github_user"]
     raw = f"https://raw.githubusercontent.com/{user}/{user}/output"
     def card(p):
         img = (f'<img src="assets/card-{p["id"]}.svg" width="49%" '
                f'alt="{escape(p["name"].title())}: {escape(p["subtitle"])}" />')
         return f'  <a href="{p["repo"]}">{img}</a>' if p.get("repo") else f"  {img}"
-    cards = "\n".join(card(p) for p in CFG["projects"])
+    cards = "\n".join(card(p) for p in cards_data)
     hero = ('<img src="assets/hero.svg" width="100%" alt="RUPAK RAJ in pixel letters over a night riverside: '
-            'a blossoming tree, three figures on a ledge, a train crossing the bridge." />'
+            'a blossoming tree, a person and a cat on a ledge, a train crossing the bridge." />'
             if (ASSETS / "hero.svg").exists() else "<!-- hero.svg goes here -->")
     links = CFG.get("contact_links", {})
     contact_row = ""
     if links:
         contact_row = ('<p align="center"><sub>' + " · ".join(
             f'<a href="{u}">{k}</a>' for k, u in links.items()) + "</sub></p>\n\n")
+    more_links = ""
+    if more:
+        more_links = ('<p align="center"><sub>' + " · ".join(
+            f'<a href="{r["url"]}">{escape(r["name"])}</a>' for r in more) + "</sub></p>\n")
     divider = ('<p align="center"><img src="assets/divider.svg" width="100%" alt="" /></p>\n'
                if (ASSETS / "divider.svg").exists() else "")
     return f'''<!-- generated by scripts/build.py from profile.config.json — edit those, not this file -->
@@ -351,9 +413,9 @@ def readme():
 </p>
 
 <p align="center">
-  <img src="assets/projects-ls.svg" width="100%" alt="More projects: {escape(", ".join(n.rstrip("/") for n, _ in CFG["more_projects"]))}" />
+  <img src="assets/projects-ls.svg" width="100%" alt="More projects: {escape(", ".join(r["name"] for r in more) or "none yet")}" />
 </p>
-
+{more_links}
 <p align="center">
   <img src="assets/stack.svg" width="100%" alt="Toolbox: {escape(", ".join(ICONS[s]["title"] for _, sl in CFG["stack"] for s in sl))}" />
 </p>
@@ -380,13 +442,14 @@ def unlink_images(md):
 def main():
     ASSETS.mkdir(exist_ok=True)
     stats = fetch_stats()
-    out = {"info-card.svg": info_card(stats), "projects-ls.svg": projects_ls(), "stack.svg": stack_panel()}
-    for p in CFG["projects"]:
+    cards, more = resolve_projects(fetch_repos())
+    out = {"info-card.svg": info_card(stats), "projects-ls.svg": projects_ls(more), "stack.svg": stack_panel()}
+    for p in cards:
         out[f"card-{p['id']}.svg"] = project_card(p)
     for name, svg in out.items():
         (ASSETS / name).write_text(svg, encoding="utf-8")
         print("wrote", name)
-    (ROOT / "README.md").write_text(unlink_images(readme()), encoding="utf-8")
+    (ROOT / "README.md").write_text(unlink_images(readme(cards, more)), encoding="utf-8")
     print("wrote README.md")
 
 
