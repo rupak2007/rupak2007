@@ -493,7 +493,22 @@ def unlink_images(md):
     """GitHub wraps every bare <img> in a link to the file. Images inside <picture> are left
     alone, so wrapping ours keeps a click on the profile from jumping into the repo."""
     import re
-    return re.sub(r'(<img src="assets/[^>]*?/>)', r"<picture>\1</picture>", md)
+    md = re.sub(r'(<img src="assets/[^>]*?/>)', r"<picture>\1</picture>", md)
+    return bust_cache(md)
+
+
+def bust_cache(md):
+    """GitHub's image proxy caches each URL for hours, so a changed picture can keep showing
+    the old version. A short content hash on each local src gives every new version a new URL."""
+    import hashlib
+    import re
+
+    def tag(m):
+        f = ROOT / m.group(1)
+        if not f.exists():
+            return m.group(0)
+        return f'src="{m.group(1)}?v={hashlib.sha1(f.read_bytes()).hexdigest()[:8]}"'
+    return re.sub(r'src="(assets/[^"?]+)"', tag, md)
 
 
 def main():
