@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <picture><img src="assets/info-card.svg?v=830f474f" width="100%" alt="about.txt: AI/ML engineer (student), B.Tech CSE (AI/ML) at SRM IST, class of 28. Into machine learning, AI systems, backend and applied AI. Open to ML internships, summer 27. Live GitHub stats and contact details." /></picture>
+  <picture><img src="assets/info-card.svg?v=a54fed69" width="100%" alt="about.txt: AI/ML engineer (student), B.Tech CSE (AI/ML) at SRM IST, class of 28. Into machine learning, AI systems, backend and applied AI. Open to ML internships, summer 27. Live GitHub stats and contact details." /></picture>
 </p>
 
 <p align="center"><sub><a href="https://github.com/rupak2007">github</a> · <a href="https://www.linkedin.com/in/rupak-raj-bab83335b/">linkedin</a> · <a href="mailto:rupakraj.v@gmail.com">mail</a></sub></p>
