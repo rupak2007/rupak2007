@@ -1,19 +1,19 @@
 [
  {
+  "name": "rupak2007",
+  "description": "profile",
+  "url": "https://github.com/rupak2007/rupak2007",
+  "language": "Python",
+  "pushed_at": "2026-10-19T13:25:43Z",
+  "fork": false,
+  "archived": false
+ },
+ {
   "name": "ciphraud",
   "description": "Privacy-preserving fraud detection using Fully Homomorphic Encryption",
   "url": "https://github.com/rupak2007/ciphraud",
   "language": "Python",
   "pushed_at": "2026-10-19T05:35:19Z",
-  "fork": false,
-  "archived": false
- },
- {
-  "name": "rupak2007",
-  "description": "profile",
-  "url": "https://github.com/rupak2007/rupak2007",
-  "language": "Python",
-  "pushed_at": "2026-10-19T04:47:17Z",
   "fork": false,
   "archived": false
  },
