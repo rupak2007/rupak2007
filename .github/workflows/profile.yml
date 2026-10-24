@@ -2,7 +2,7 @@ name: profile
 
 on:
   schedule:
-    - cron: "17 */6 * * *"   # every 6 hours
+    - cron: "17 * * * *"     # hourly, so new public repos and stats show up the same hour
   workflow_dispatch:
   push:
     branches: [main]
