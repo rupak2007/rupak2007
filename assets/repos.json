@@ -1,10 +1,10 @@
 [
  {
-  "name": "ciphraud",
-  "description": "Privacy-preserving fraud detection using Fully Homomorphic Encryption",
-  "url": "https://github.com/rupak2007/ciphraud",
+  "name": "tracewright",
+  "description": "",
+  "url": "https://github.com/rupak2007/tracewright",
   "language": "Python",
-  "pushed_at": "2026-11-01T04:52:08Z",
+  "pushed_at": "2026-11-01T12:26:41Z",
   "fork": false,
   "archived": false
  },
@@ -13,16 +13,16 @@
   "description": "profile",
   "url": "https://github.com/rupak2007/rupak2007",
   "language": "Python",
-  "pushed_at": "2026-10-31T21:40:02Z",
+  "pushed_at": "2026-11-01T06:14:38Z",
   "fork": false,
   "archived": false
  },
  {
-  "name": "tracewright",
-  "description": "",
-  "url": "https://github.com/rupak2007/tracewright",
+  "name": "ciphraud",
+  "description": "Privacy-preserving fraud detection using Fully Homomorphic Encryption",
+  "url": "https://github.com/rupak2007/ciphraud",
   "language": "Python",
-  "pushed_at": "2026-10-08T18:51:48Z",
+  "pushed_at": "2026-11-01T04:52:08Z",
   "fork": false,
   "archived": false
  },
